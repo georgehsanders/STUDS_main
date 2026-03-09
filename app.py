@@ -309,16 +309,23 @@ def run_reconciliation():
 
     # Collect all store IDs from variance files AND audit trail warehouses
     all_store_ids = set(scan['variance_files'].keys())
-    # Also include stores seen in audit trail that might not have variance files
     for row in audit_rows:
         wh = row['warehouse']
         if wh:
             all_store_ids.add(wh)
-    # Only reconcile stores that have variance files; mark others incomplete only if they appear in variance
-    # Actually: only stores with variance files are shown
-    variance_store_ids = set(scan['variance_files'].keys())
 
-    for store_id in sorted(variance_store_ids, key=lambda x: int(x) if x.isdigit() else x):
+    for store_id in sorted(all_store_ids, key=lambda x: int(x) if x.isdigit() else x):
+        # Store has no variance file → Incomplete
+        if store_id not in scan['variance_files']:
+            stores.append({
+                'store_id': store_id,
+                'status': STATUS_INCOMPLETE,
+                'active_sku_count': 0,
+                'discrepancy_count': 0,
+                'net_discrepancy': 0,
+                'sku_details': [],
+            })
+            continue
         if not can_reconcile:
             stores.append({
                 'store_id': store_id,

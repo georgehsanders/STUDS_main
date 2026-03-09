@@ -1,0 +1,25 @@
+Sku,Description,Counted Units,Onhand Units,Unit Variance,Areas
+EAR-TI-GLD,Tiny Gold Studs,14,13,1,Wall Rack
+EAR-TI-SLV,Tiny Silver Studs,35,35,0,Wall Rack
+EAR-HG-GLD,Huggie Gold Hoops,0,2,-2,Display Case A
+EAR-HG-SLV,Huggie Silver Hoops,8,8,0,Piercing Station 1
+EAR-FL-GLD,Flat Back Gold Labret,14,18,-4,Display Case C
+EAR-FL-SLV,Flat Back Silver Labret,16,19,-3,Wall Rack
+EAR-CZ-CLR,CZ Clear Round Stud,21,25,-4,Display Case C
+EAR-CZ-BLK,CZ Black Round Stud,28,28,0,Piercing Station 1
+EAR-OP-WHT,Opal White Cabochon,26,27,-1,Display Case E
+EAR-OP-PNK,Opal Pink Cabochon,11,10,1,Display Case D
+EAR-ST-MN,Star Moon Charm,21,19,2,Display Case D
+EAR-ST-HRT,Star Heart Charm,26,26,0,Display Case D
+EAR-BZ-GLD,Bezel Set Gold,7,11,-4,Wall Rack
+EAR-BZ-SLV,Bezel Set Silver,28,28,0,Wall Rack
+EAR-CL-DBL,Cluster Double Stack,37,35,2,Back Stock
+EAR-CL-TRP,Cluster Triple Stack,33,33,0,Display Case E
+EAR-CH-LNK,Chain Link Drop,5,5,0,Piercing Station 2
+EAR-CH-THR,Chain Threader,12,12,0,Display Case A
+EAR-DG-RND,Dangle Round Drop,13,18,-5,Wall Rack
+EAR-DG-OVL,Dangle Oval Drop,30,30,0,Piercing Station 1
+EAR-CB-SQ,Cabochon Square,27,25,2,Back Stock
+EAR-CB-TRI,Cabochon Triangle,18,18,0,Piercing Station 1
+EAR-PL-THN,Plain Thin Ring,8,9,-1,Piercing Station 1
+EAR-PL-THK,Plain Thick Ring,14,14,0,Back Stock
