@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STUDS — Settings</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>Settings</h1>
+        <div class="header-meta">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/upload" class="nav-link">Upload</a>
+            <a href="/logout" class="nav-link">Logout</a>
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="warnings">
+        {% for category, message in messages %}
+        <div class="warning-item {% if category == 'success' %}warning-success{% endif %}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <form method="POST">
+        <div class="settings-section">
+            <h2>Email Template</h2>
+            <p class="upload-help">Default email body sent to stores with discrepancies. Use <code>{{sku_table}}</code> as a placeholder for the list of discrepant SKUs.</p>
+            <textarea name="email_body_template" class="settings-textarea">{{ settings.email_body_template }}</textarea>
+        </div>
+
+        <div class="settings-section">
+            <h2>Store Email Addresses</h2>
+            <p class="upload-help">Set email addresses for each store. These will be used in email drafts.</p>
+            <table class="store-table">
+                <thead>
+                    <tr>
+                        <th>Store</th>
+                        <th>Email Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for store in stores %}
+                    <tr>
+                        <td>{{ store.store_name }}</td>
+                        <td>
+                            <input type="email" name="store_email_{{ store.store_id }}"
+                                   value="{{ settings.store_emails.get(store.store_id, '') }}"
+                                   placeholder="store{{ store.store_id }}@studs.com"
+                                   class="settings-input">
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <button type="submit" class="btn-primary">Save Settings</button>
+    </form>
+</body>
+</html>

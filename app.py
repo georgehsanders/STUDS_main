@@ -2,23 +2,35 @@ import os
 import re
 import csv
 import io
+import json
 from datetime import datetime
-from flask import Flask, render_template, jsonify
+from functools import wraps
+from flask import (Flask, render_template, jsonify, request, redirect,
+                   url_for, session, send_file, flash)
 
 app = Flask(__name__)
 
+# --- Password protection ---
+APP_PASSWORD = 'studs2024'
+app.secret_key = 'studs-secret-key-change-in-production'
+
 INPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'input')
 PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'processed')
+SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.json')
 
 # --- Status constants ---
 STATUS_UPDATED = "Updated"
 STATUS_DISCREPANCY = "Discrepancy Detected"
 STATUS_INCOMPLETE = "Incomplete — Missing File"
 
-# --- Store name mapping placeholder ---
-# v2: Replace this with a mapping of store ID -> store name.
-# Example: STORE_NAMES = {"1001": "Downtown", "1002": "Westside"}
-STORE_NAMES = {}
+# --- Default email template ---
+DEFAULT_EMAIL_BODY = (
+    "We recently completed an inventory audit and found discrepancies in the following SKUs "
+    "at your location. Please review and reconcile these items at your earliest convenience.\n\n"
+    "{{sku_table}}\n\n"
+    "Please confirm once these have been addressed.\n\n"
+    "Thank you,\nInventory Management Team"
+)
 
 # --- File pattern regexes ---
 RE_SKU_LIST = re.compile(r'^SKU_List_(\d{2}_\d{2}_\d{2})\.csv$')
@@ -32,6 +44,37 @@ RE_RS_PREFIX = re.compile(r'^RS', re.IGNORECASE)
 def is_excluded_sku(sku):
     """Return True if this SKU should be excluded (starts with RS)."""
     return bool(RE_RS_PREFIX.match(sku))
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if not session.get('logged_in'):
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated
+
+
+def load_settings():
+    """Load settings from JSON file."""
+    defaults = {
+        'email_body_template': DEFAULT_EMAIL_BODY,
+        'store_emails': {},
+    }
+    if os.path.exists(SETTINGS_FILE):
+        try:
+            with open(SETTINGS_FILE, 'r') as f:
+                saved = json.load(f)
+            defaults.update(saved)
+        except (json.JSONDecodeError, IOError):
+            pass
+    return defaults
+
+
+def save_settings(settings):
+    """Save settings to JSON file."""
+    with open(SETTINGS_FILE, 'w') as f:
+        json.dump(settings, f, indent=2)
 
 
 def clean_csv_content(raw_bytes):
@@ -49,16 +92,16 @@ def parse_csv(filepath):
         raw = f.read()
     text = clean_csv_content(raw)
     reader = csv.DictReader(io.StringIO(text))
-    reader.fieldnames = [h.strip() for h in reader.fieldnames]
+    reader.fieldnames = [h.strip().lower() for h in reader.fieldnames]
     rows = []
     for row in reader:
-        cleaned = {k.strip(): v.strip() for k, v in row.items()}
+        cleaned = {k.strip().lower(): v.strip() for k, v in row.items()}
         rows.append(cleaned)
     return rows
 
 
 def scan_input_files():
-    """Scan /input/ and classify files by regex. Returns dict of classified files and warnings."""
+    """Scan /input/ and classify files by regex."""
     sku_lists = []
     variance_files = {}
     audit_trails = []
@@ -93,9 +136,7 @@ def scan_input_files():
             audit_trails.append((filename, m_audit.group(1)))
         else:
             unrecognized.append(filename)
-            print(f"[WARN] Unrecognized file in /input/: {filename}")
 
-    # If multiple SKU lists, pick most recent by date string
     if len(sku_lists) > 1:
         sku_lists.sort(key=lambda x: x[1], reverse=True)
         warnings.append(f"Multiple SKU lists found. Using most recent: {sku_lists[0][0]}")
@@ -122,69 +163,89 @@ def load_sku_list(filepath):
     rows = parse_csv(filepath)
     skus = set()
     for row in rows:
-        sku = row.get('SKU', '').strip()
+        sku = row.get('sku', '').strip()
         if sku and not is_excluded_sku(sku):
             skus.add(sku)
     return skus
 
 
 def load_variance(filepath):
-    """Load a per-store variance file. Returns list of dicts with parsed numeric fields."""
+    """Load a per-store variance file. Real format: productid, sku, quantity, location, item cost price.
+    The quantity column is the required push (equivalent to Unit Variance)."""
     rows = parse_csv(filepath)
     result = []
     for row in rows:
-        sku = row.get('Sku', row.get('SKU', '')).strip()
+        sku = row.get('sku', '').strip()
         if not sku or is_excluded_sku(sku):
             continue
         try:
-            counted = int(float(row.get('Counted Units', '0').strip() or '0'))
+            quantity = int(float(row.get('quantity', '0').strip() or '0'))
         except (ValueError, TypeError):
-            counted = 0
+            quantity = 0
         try:
-            onhand = int(float(row.get('Onhand Units', '0').strip() or '0'))
+            cost_price = float(row.get('item cost price', '0').strip() or '0')
         except (ValueError, TypeError):
-            onhand = 0
-        try:
-            unit_variance = int(float(row.get('Unit Variance', '0').strip() or '0'))
-        except (ValueError, TypeError):
-            unit_variance = counted - onhand
+            cost_price = 0.0
         result.append({
+            'product_id': row.get('productid', ''),
             'sku': sku,
-            'description': row.get('Description', ''),
-            'counted_units': counted,
-            'onhand_units': onhand,
-            'unit_variance': unit_variance,
-            'areas': row.get('Areas', ''),
+            'quantity': quantity,
+            'location': row.get('location', ''),
+            'item_cost_price': cost_price,
         })
     return result
+
+
+def parse_warehouse_id(warehouse_str):
+    """Extract numeric store ID from warehouse string like '033 CA Fashion Island'.
+    Returns the numeric prefix as a string (stripped of leading zeros for matching)."""
+    m = re.match(r'^(\d+)', warehouse_str.strip())
+    if m:
+        return str(int(m.group(1)))  # Remove leading zeros
+    return warehouse_str.strip()
 
 
 def load_audit_trail(filepath):
-    """Load global audit trail. Returns list of dicts with parsed fields."""
+    """Load global audit trail. Returns list of dicts with parsed fields.
+    Parses Warehouse column to extract store ID and full store name."""
     rows = parse_csv(filepath)
     result = []
     for row in rows:
-        sku = row.get('SKU', '').strip()
+        sku = row.get('sku', '').strip()
         if not sku or is_excluded_sku(sku):
             continue
-        ref = row.get('Reference', '').strip()
+        ref = row.get('reference', '').strip()
         try:
-            qty = int(float(row.get('Quantity', '0').strip() or '0'))
+            qty = int(float(row.get('quantity', '0').strip() or '0'))
         except (ValueError, TypeError):
             qty = 0
+        warehouse_raw = row.get('warehouse', '').strip()
+        store_id = parse_warehouse_id(warehouse_raw)
         result.append({
-            'product_id': row.get('Product ID', '').strip(),
+            'product_id': row.get('product id', '').strip(),
             'sku': sku,
-            'product_name': row.get('Product Name', '').strip(),
-            'options': row.get('Options', '').strip(),
+            'product_name': row.get('product name', '').strip(),
+            'options': row.get('options', '').strip(),
             'quantity': qty,
-            'price': row.get('Price', '').strip(),
+            'price': row.get('price', '').strip(),
             'reference': ref,
-            'warehouse': row.get('Warehouse', '').strip(),
-            'date': row.get('Date', '').strip(),
-            'movement_id': row.get('Movement ID', '').strip(),
+            'warehouse': store_id,
+            'warehouse_raw': warehouse_raw,
+            'date': row.get('date', '').strip(),
+            'movement_id': row.get('movement id', '').strip(),
         })
     return result
+
+
+def build_store_name_map(audit_rows):
+    """Build a mapping of store_id -> full warehouse name from audit trail data."""
+    store_names = {}
+    for row in audit_rows:
+        wh_raw = row.get('warehouse_raw', '')
+        store_id = row.get('warehouse', '')
+        if wh_raw and store_id and store_id not in store_names:
+            store_names[store_id] = wh_raw
+    return store_names
 
 
 def get_audit_date_range(audit_rows):
@@ -196,34 +257,18 @@ def get_audit_date_range(audit_rows):
 
 
 def reconcile_store(store_id, weekly_skus, variance_data, audit_rows):
-    """
-    Reconcile a single store. Completely decoupled from Flask.
-
-    Args:
-        store_id: string store identifier
-        weekly_skus: set of SKU strings from the weekly SKU list (already RS-filtered)
-        variance_data: list of dicts from load_variance (already RS-filtered)
-        audit_rows: list of dicts from load_audit_trail (global, already RS-filtered)
-
-    Returns:
-        dict with keys: store_id, status, active_skus, discrepancy_count,
-                        net_discrepancy, sku_details
-    """
-    # Step 1 — active SKUs = intersection of weekly list and variance file SKUs, minus RS
+    """Reconcile a single store."""
     variance_skus = {item['sku'] for item in variance_data}
     active_skus = {s for s in (weekly_skus & variance_skus) if not is_excluded_sku(s)}
 
-    # Build lookup for variance data
     variance_lookup = {item['sku']: item for item in variance_data}
 
-    # Filter audit trail to this store, relevant references
     store_audit = [
         r for r in audit_rows
         if r['warehouse'] == store_id
         and ('stock update' in r['reference'].lower() or 'stock check' in r['reference'].lower())
     ]
 
-    # Build audit lookup: SKU -> sum of quantity
     audit_by_sku = {}
     for r in store_audit:
         audit_by_sku[r['sku']] = audit_by_sku.get(r['sku'], 0) + r['quantity']
@@ -234,16 +279,16 @@ def reconcile_store(store_id, weekly_skus, variance_data, audit_rows):
 
     for sku in sorted(active_skus):
         var_item = variance_lookup[sku]
-        required_push = var_item['unit_variance']  # Step 2
-        actual_push = audit_by_sku.get(sku, 0)     # Step 3
-        discrepancy = required_push - actual_push   # Step 4
+        required_push = var_item['quantity']
+        actual_push = audit_by_sku.get(sku, 0)
+        discrepancy = required_push - actual_push
 
         detail = {
             'sku': sku,
-            'description': var_item['description'],
-            'counted_units': var_item['counted_units'],
-            'onhand_units': var_item['onhand_units'],
-            'unit_variance': required_push,
+            'product_id': var_item['product_id'],
+            'quantity': required_push,
+            'location': var_item['location'],
+            'item_cost_price': var_item['item_cost_price'],
             'actual_push': actual_push,
             'discrepancy': discrepancy,
         }
@@ -253,7 +298,6 @@ def reconcile_store(store_id, weekly_skus, variance_data, audit_rows):
             discrepancy_count += 1
             net_discrepancy += discrepancy
 
-    # Step 5 — status
     if discrepancy_count > 0:
         status = STATUS_DISCREPANCY
     else:
@@ -266,14 +310,12 @@ def reconcile_store(store_id, weekly_skus, variance_data, audit_rows):
         'discrepancy_count': discrepancy_count,
         'net_discrepancy': net_discrepancy,
         'sku_details': [d for d in sku_details if d['discrepancy'] != 0],
+        'all_sku_details': sku_details,
     }
 
 
 def run_reconciliation():
-    """
-    Full reconciliation pipeline. Scans /input/, loads files, reconciles all stores.
-    Returns a results dict suitable for rendering.
-    """
+    """Full reconciliation pipeline."""
     scan = scan_input_files()
     warnings = list(scan['warnings'])
     stores = []
@@ -282,7 +324,6 @@ def run_reconciliation():
     audit_date_min = None
     audit_date_max = None
 
-    # Load SKU list
     weekly_skus = set()
     if scan['sku_lists']:
         sku_list_filename = scan['sku_lists'][0][0]
@@ -290,10 +331,8 @@ def run_reconciliation():
             weekly_skus = load_sku_list(os.path.join(INPUT_DIR, sku_list_filename))
             sku_count = len(weekly_skus)
         except Exception as e:
-            print(f"[ERROR] Failed to parse SKU list {sku_list_filename}: {e}")
             warnings.append(f"Failed to parse SKU list: {e}")
 
-    # Load audit trail
     audit_rows = []
     audit_filename = None
     if scan['audit_trails']:
@@ -302,12 +341,12 @@ def run_reconciliation():
             audit_rows = load_audit_trail(os.path.join(INPUT_DIR, audit_filename))
             audit_date_min, audit_date_max = get_audit_date_range(audit_rows)
         except Exception as e:
-            print(f"[ERROR] Failed to parse audit trail {audit_filename}: {e}")
             warnings.append(f"Failed to parse audit trail: {e}")
 
-    can_reconcile = bool(weekly_skus) and (scan['audit_trails'] is not None and len(scan['audit_trails']) > 0)
+    store_names = build_store_name_map(audit_rows)
 
-    # Collect all store IDs from variance files AND audit trail warehouses
+    can_reconcile = bool(weekly_skus) and len(scan.get('audit_trails', [])) > 0
+
     all_store_ids = set(scan['variance_files'].keys())
     for row in audit_rows:
         wh = row['warehouse']
@@ -315,25 +354,30 @@ def run_reconciliation():
             all_store_ids.add(wh)
 
     for store_id in sorted(all_store_ids, key=lambda x: int(x) if x.isdigit() else x):
-        # Store has no variance file → Incomplete
+        store_name = store_names.get(store_id, store_id)
+
         if store_id not in scan['variance_files']:
             stores.append({
                 'store_id': store_id,
+                'store_name': store_name,
                 'status': STATUS_INCOMPLETE,
                 'active_sku_count': 0,
                 'discrepancy_count': 0,
                 'net_discrepancy': 0,
                 'sku_details': [],
+                'all_sku_details': [],
             })
             continue
         if not can_reconcile:
             stores.append({
                 'store_id': store_id,
+                'store_name': store_name,
                 'status': STATUS_INCOMPLETE,
                 'active_sku_count': 0,
                 'discrepancy_count': 0,
                 'net_discrepancy': 0,
                 'sku_details': [],
+                'all_sku_details': [],
             })
             continue
 
@@ -341,22 +385,23 @@ def run_reconciliation():
         try:
             variance_data = load_variance(os.path.join(INPUT_DIR, variance_filename))
         except Exception as e:
-            print(f"[ERROR] Failed to parse variance file {variance_filename}: {e}")
             warnings.append(f"Failed to parse {variance_filename}: {e}")
             stores.append({
                 'store_id': store_id,
+                'store_name': store_name,
                 'status': STATUS_INCOMPLETE,
                 'active_sku_count': 0,
                 'discrepancy_count': 0,
                 'net_discrepancy': 0,
                 'sku_details': [],
+                'all_sku_details': [],
             })
             continue
 
         result = reconcile_store(store_id, weekly_skus, variance_data, audit_rows)
+        result['store_name'] = store_name
         stores.append(result)
 
-    # Summary counts
     count_updated = sum(1 for s in stores if s['status'] == STATUS_UPDATED)
     count_discrepancy = sum(1 for s in stores if s['status'] == STATUS_DISCREPANCY)
     count_incomplete = sum(1 for s in stores if s['status'] == STATUS_INCOMPLETE)
@@ -378,16 +423,171 @@ def run_reconciliation():
 
 # --- Flask routes ---
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.form.get('password') == APP_PASSWORD:
+            session['logged_in'] = True
+            return redirect(url_for('index'))
+        else:
+            flash('Incorrect password.', 'error')
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
+
+
 @app.route('/')
+@login_required
 def index():
     results = run_reconciliation()
-    return render_template('index.html', data=results)
+    settings = load_settings()
+    return render_template('index.html', data=results, settings=settings)
 
 
 @app.route('/refresh', methods=['POST'])
+@login_required
 def refresh():
     results = run_reconciliation()
     return jsonify(results)
+
+
+@app.route('/upload', methods=['GET', 'POST'])
+@login_required
+def upload():
+    if request.method == 'POST':
+        files = request.files.getlist('files')
+        uploaded = []
+        for f in files:
+            if f.filename:
+                filepath = os.path.join(INPUT_DIR, f.filename)
+                f.save(filepath)
+                uploaded.append(f.filename)
+        if uploaded:
+            flash(f'Uploaded {len(uploaded)} file(s): {", ".join(uploaded)}', 'success')
+        return redirect(url_for('upload'))
+
+    # List current files in /input/
+    current_files = []
+    if os.path.isdir(INPUT_DIR):
+        for fname in sorted(os.listdir(INPUT_DIR)):
+            fpath = os.path.join(INPUT_DIR, fname)
+            if os.path.isfile(fpath):
+                mtime = datetime.fromtimestamp(os.path.getmtime(fpath))
+                size_kb = os.path.getsize(fpath) / 1024
+                current_files.append({
+                    'name': fname,
+                    'modified': mtime.strftime('%Y-%m-%d %H:%M:%S'),
+                    'size': f'{size_kb:.1f} KB',
+                })
+    return render_template('upload.html', files=current_files)
+
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings_page():
+    settings = load_settings()
+    if request.method == 'POST':
+        settings['email_body_template'] = request.form.get('email_body_template', DEFAULT_EMAIL_BODY)
+        # Save per-store emails
+        store_emails = {}
+        for key, val in request.form.items():
+            if key.startswith('store_email_'):
+                store_id = key.replace('store_email_', '')
+                store_emails[store_id] = val.strip()
+        settings['store_emails'] = store_emails
+        save_settings(settings)
+        flash('Settings saved.', 'success')
+        return redirect(url_for('settings_page'))
+
+    # Get all store IDs for email configuration
+    results = run_reconciliation()
+    return render_template('settings.html', settings=settings, stores=results['stores'])
+
+
+@app.route('/email-draft/<store_id>')
+@login_required
+def email_draft(store_id):
+    results = run_reconciliation()
+    settings = load_settings()
+
+    store = None
+    for s in results['stores']:
+        if s['store_id'] == store_id:
+            store = s
+            break
+
+    if not store:
+        return "Store not found", 404
+
+    store_number = store_id
+    store_email = settings.get('store_emails', {}).get(store_id, '')
+    template = settings.get('email_body_template', DEFAULT_EMAIL_BODY)
+
+    # Build SKU table
+    sku_lines = []
+    for d in store.get('sku_details', []):
+        sku_lines.append(f"  - SKU: {d['sku']} | Required Push: {d['quantity']} | Actual Push: {d['actual_push']} | Discrepancy: {d['discrepancy']}")
+
+    sku_table = "\n".join(sku_lines) if sku_lines else "  (No specific discrepancies)"
+    body = template.replace('{{sku_table}}', sku_table)
+
+    draft = {
+        'to': store_email,
+        'subject': f'Inventory Discrepancy — Studio {store_number}',
+        'greeting': f'Hi, Studio {store_number},',
+        'body': body,
+        'store_name': store.get('store_name', store_id),
+    }
+    return jsonify(draft)
+
+
+@app.route('/export')
+@login_required
+def export_csv():
+    results = run_reconciliation()
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        'Store ID', 'Store Name', 'Status', 'SKU', 'Product ID',
+        'Required Push', 'Location', 'Item Cost Price',
+        'Actual Push', 'Discrepancy'
+    ])
+
+    for store in results['stores']:
+        if store.get('all_sku_details'):
+            for d in store['all_sku_details']:
+                writer.writerow([
+                    store['store_id'],
+                    store.get('store_name', ''),
+                    store['status'],
+                    d['sku'],
+                    d.get('product_id', ''),
+                    d['quantity'],
+                    d.get('location', ''),
+                    d.get('item_cost_price', ''),
+                    d['actual_push'],
+                    d['discrepancy'],
+                ])
+        else:
+            writer.writerow([
+                store['store_id'],
+                store.get('store_name', ''),
+                store['status'],
+                '', '', '', '', '', '', '',
+            ])
+
+    output.seek(0)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    return send_file(
+        io.BytesIO(output.getvalue().encode('utf-8')),
+        mimetype='text/csv',
+        as_attachment=True,
+        download_name=f'STUDS_Dashboard_Export_{timestamp}.csv',
+    )
 
 
 if __name__ == '__main__':

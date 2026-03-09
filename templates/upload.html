@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STUDS — Upload Files</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>Upload Input Files</h1>
+        <div class="header-meta">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/settings" class="nav-link">Settings</a>
+            <a href="/logout" class="nav-link">Logout</a>
+        </div>
+    </header>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="warnings">
+        {% for category, message in messages %}
+        <div class="warning-item {% if category == 'success' %}warning-success{% endif %}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="upload-section">
+        <h2>Upload New Files</h2>
+        <p class="upload-help">Upload variance files, SKU lists, or audit trail CSVs. Files will overwrite existing files with the same name in /input/.</p>
+        <form method="POST" enctype="multipart/form-data" class="upload-form">
+            <input type="file" name="files" multiple accept=".csv" required>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+
+    <div class="upload-section">
+        <h2>Current Files in /input/</h2>
+        {% if files %}
+        <table class="store-table">
+            <thead>
+                <tr>
+                    <th>File Name</th>
+                    <th>Last Modified</th>
+                    <th>Size</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in files %}
+                <tr>
+                    <td>{{ f.name }}</td>
+                    <td>{{ f.modified }}</td>
+                    <td>{{ f.size }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-disc">No files found in /input/.</p>
+        {% endif %}
+    </div>
+</body>
+</html>

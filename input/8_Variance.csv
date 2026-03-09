@@ -1,19 +1,20 @@
-Sku,Description,Counted Units,Onhand Units,Unit Variance,Areas
-EAR-BZ-GLD,Bezel Set Gold,7,10,-3,Back Stock
-EAR-CL-DBL,Cluster Double Stack,8,8,0,Wall Rack
-EAR-ST-MN,Star Moon Charm,29,31,-2,Display Case A
-EAR-CZ-CLR,CZ Clear Round Stud,8,11,-3,Display Case B
-EAR-CZ-BLK,CZ Black Round Stud,25,23,2,Piercing Station 2
-EAR-DG-RND,Dangle Round Drop,23,23,0,Back Stock
-EAR-PL-THK,Plain Thick Ring,17,22,-5,Wall Rack
-EAR-DG-OVL,Dangle Oval Drop,3,6,-3,Display Case D
-EAR-BZ-SLV,Bezel Set Silver,11,16,-5,Display Case B
-EAR-TI-GLD,Tiny Gold Studs,8,8,0,Wall Rack
-EAR-FL-SLV,Flat Back Silver Labret,21,21,0,Display Case A
-EAR-ST-HRT,Star Heart Charm,5,5,0,Display Case E
-EAR-CH-LNK,Chain Link Drop,29,29,0,Display Case C
-EAR-CB-SQ,Cabochon Square,28,28,0,Display Case C
-EAR-CB-TRI,Cabochon Triangle,3,7,-4,Piercing Station 2
-EAR-HG-GLD,Huggie Gold Hoops,33,33,0,Display Case C
-EAR-CH-THR,Chain Threader,18,18,0,Wall Rack
-EAR-PL-THN,Plain Thin Ring,3,2,1,Wall Rack
+productid,sku,quantity,location,item cost price
+4014,EAR-CL-DBL,-2,Display Case E,42.99
+4002,EAR-HG-GLD,-3,Display Case E,34.99
+4021,EAR-CB-TRI,-2,Back Stock,31.99
+4007,EAR-CZ-BLK,-2,Display Case B,19.99
+4008,EAR-OP-WHT,-5,Piercing Station 1,25.99
+4018,EAR-DG-RND,0,Display Case B,26.99
+4006,EAR-CZ-CLR,1,Display Case A,19.99
+4013,EAR-BZ-SLV,2,Display Case E,34.99
+4003,EAR-HG-SLV,1,Display Case C,32.99
+4019,EAR-DG-OVL,-4,Wall Rack,28.99
+4015,EAR-CL-TRP,-2,Piercing Station 2,48.99
+4010,EAR-ST-MN,-2,Display Case B,18.99
+4022,EAR-PL-THN,0,Piercing Station 1,14.99
+4004,EAR-FL-GLD,-3,Display Case B,29.99
+4011,EAR-ST-HRT,-3,Piercing Station 2,18.99
+4001,EAR-TI-SLV,-1,Piercing Station 2,22.99
+4000,EAR-TI-GLD,-3,Display Case A,24.99
+4023,EAR-PL-THK,0,Display Case E,16.99
+4009,EAR-OP-PNK,2,Piercing Station 2,27.99

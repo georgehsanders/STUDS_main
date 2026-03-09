@@ -1,25 +1,25 @@
-Sku,Description,Counted Units,Onhand Units,Unit Variance,Areas
-EAR-TI-GLD,Tiny Gold Studs,7,8,-1,Display Case B
-EAR-TI-SLV,Tiny Silver Studs,13,18,-5,Display Case C
-EAR-HG-GLD,Huggie Gold Hoops,17,17,0,Piercing Station 1
-EAR-HG-SLV,Huggie Silver Hoops,29,30,-1,Back Stock
-EAR-FL-GLD,Flat Back Gold Labret,34,35,-1,Display Case A
-EAR-FL-SLV,Flat Back Silver Labret,17,21,-4,Display Case B
-EAR-CZ-CLR,CZ Clear Round Stud,19,18,1,Display Case B
-EAR-CZ-BLK,CZ Black Round Stud,11,11,0,Display Case E
-EAR-OP-WHT,Opal White Cabochon,15,15,0,Piercing Station 1
-EAR-OP-PNK,Opal Pink Cabochon,20,18,2,Back Stock
-EAR-ST-MN,Star Moon Charm,7,5,2,Display Case B
-EAR-ST-HRT,Star Heart Charm,19,19,0,Display Case A
-EAR-BZ-GLD,Bezel Set Gold,10,10,0,Display Case E
-EAR-BZ-SLV,Bezel Set Silver,29,30,-1,Back Stock
-EAR-CL-DBL,Cluster Double Stack,2,2,0,Display Case B
-EAR-CL-TRP,Cluster Triple Stack,11,11,0,Back Stock
-EAR-CH-LNK,Chain Link Drop,25,25,0,Back Stock
-EAR-CH-THR,Chain Threader,10,10,0,Display Case A
-EAR-DG-RND,Dangle Round Drop,4,4,0,Piercing Station 1
-EAR-DG-OVL,Dangle Oval Drop,17,17,0,Display Case B
-EAR-CB-SQ,Cabochon Square,24,28,-4,Display Case C
-EAR-CB-TRI,Cabochon Triangle,7,12,-5,Display Case C
-EAR-PL-THN,Plain Thin Ring,11,13,-2,Piercing Station 1
-EAR-PL-THK,Plain Thick Ring,17,17,0,Display Case E
+productid,sku,quantity,location,item cost price
+4000,EAR-TI-GLD,0,Wall Rack,24.99
+4001,EAR-TI-SLV,0,Display Case E,22.99
+4002,EAR-HG-GLD,-1,Display Case A,34.99
+4003,EAR-HG-SLV,-5,Display Case A,32.99
+4004,EAR-FL-GLD,-1,Display Case A,29.99
+4005,EAR-FL-SLV,0,Back Stock,27.99
+4006,EAR-CZ-CLR,0,Back Stock,19.99
+4007,EAR-CZ-BLK,0,Display Case C,19.99
+4008,EAR-OP-WHT,-4,Display Case B,25.99
+4009,EAR-OP-PNK,0,Piercing Station 2,27.99
+4010,EAR-ST-MN,-5,Display Case D,18.99
+4011,EAR-ST-HRT,-1,Display Case B,18.99
+4012,EAR-BZ-GLD,0,Back Stock,36.99
+4013,EAR-BZ-SLV,0,Display Case E,34.99
+4014,EAR-CL-DBL,0,Piercing Station 1,42.99
+4015,EAR-CL-TRP,0,Piercing Station 2,48.99
+4016,EAR-CH-LNK,2,Display Case E,22.99
+4017,EAR-CH-THR,0,Display Case B,22.99
+4018,EAR-DG-RND,0,Display Case B,26.99
+4019,EAR-DG-OVL,-4,Display Case D,28.99
+4020,EAR-CB-SQ,-4,Piercing Station 1,31.99
+4021,EAR-CB-TRI,0,Piercing Station 1,31.99
+4022,EAR-PL-THN,1,Wall Rack,14.99
+4023,EAR-PL-THK,2,Display Case E,16.99
