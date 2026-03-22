@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STUDS Inventory Continuity Dashboard</title>
+    <title>STUDS Stock Check Dashboard</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <header>
-        <h1>STUDS Inventory Continuity Dashboard</h1>
+        <h1>STUDS Stock Check Dashboard</h1>
         <div class="header-meta">
             <span>Last loaded: <strong id="last-loaded">{{ data.last_loaded }}</strong></span>
             <button id="refresh-btn" onclick="refreshData()">Refresh</button>
@@ -67,7 +67,7 @@
                 <option value="all">All</option>
                 <option value="Updated">Updated</option>
                 <option value="Discrepancy Detected">Discrepancy Detected</option>
-                <option value="Incomplete — Missing File">Incomplete</option>
+                <option value="Incomplete">Incomplete</option>
             </select>
         </label>
         <label>Sort:
@@ -85,7 +85,7 @@
                 <th></th>
                 <th>Store</th>
                 <th>Status</th>
-                <th>Active SKUs</th>
+                <th>Assigned SKUs</th>
                 <th>Discrepancies</th>
                 <th>Net Discrepancy</th>
                 <th></th>
@@ -108,9 +108,6 @@
                 <td>{{ store.discrepancy_count }}</td>
                 <td>{{ store.net_discrepancy }}</td>
                 <td class="action-cell" onclick="event.stopPropagation()">
-                    {% if store.status == 'Discrepancy Detected' or store.status == 'Incomplete — Missing File' %}
-                    <button class="btn-email" onclick="showEmailDraft('{{ store.store_id }}')">Email Draft</button>
-                    {% endif %}
                 </td>
             </tr>
             <tr class="detail-row" id="detail-{{ store.store_id }}" style="display:none;">
@@ -142,6 +139,11 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    {% if store.status == 'Discrepancy Detected' %}
+                    <div class="detail-actions">
+                        <button class="btn-email" onclick="event.stopPropagation(); showEmailDraft('{{ store.store_id }}')">Generate Email</button>
+                    </div>
+                    {% endif %}
                     {% else %}
                     <p class="no-disc">No discrepancies — all SKUs matched.</p>
                     {% endif %}
@@ -207,7 +209,7 @@
 
             pairs.forEach(function(p) {
                 var status = p.row.getAttribute('data-status');
-                if (filterVal === 'all' || status === filterVal) {
+                if (filterVal === 'all' || status === filterVal || (filterVal === 'Incomplete' && status.startsWith('Incomplete'))) {
                     p.row.style.display = '';
                 } else {
                     p.row.style.display = 'none';
@@ -220,7 +222,7 @@
                 if (sortVal === 'store_id') {
                     return parseInt(a.row.getAttribute('data-store-id')) - parseInt(b.row.getAttribute('data-store-id'));
                 } else if (sortVal === 'status') {
-                    var order = {'Discrepancy Detected': 0, 'Incomplete — Missing File': 1, 'Updated': 2};
+                    var order = {'Discrepancy Detected': 0, 'Incomplete — Missing File': 1, 'Incomplete — Unrecognized File Format': 1, 'Updated': 2};
                     return (order[a.row.getAttribute('data-status')] || 3) - (order[b.row.getAttribute('data-status')] || 3);
                 } else if (sortVal === 'discrepancy_count') {
                     return parseInt(b.row.getAttribute('data-discrepancy-count')) - parseInt(a.row.getAttribute('data-discrepancy-count'));
@@ -257,7 +259,7 @@
                     document.getElementById('modal-title').textContent = 'Email Draft — ' + draft.store_name;
                     document.getElementById('email-to').value = draft.to;
                     document.getElementById('email-subject').value = draft.subject;
-                    document.getElementById('email-body').value = draft.greeting + '\n\n' + draft.body;
+                    document.getElementById('email-body').value = draft.body;
                     document.getElementById('email-modal').style.display = 'flex';
                 })
                 .catch(function(err) {

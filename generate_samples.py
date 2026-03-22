@@ -115,7 +115,7 @@ DISCREPANCY_STORES = ALL_STORES - INCOMPLETE_STORES - UPDATED_STORES
 print(f"Updated: {len(UPDATED_STORES)} | Discrepancy: {len(DISCREPANCY_STORES)} | Incomplete: {len(INCOMPLETE_STORES)}")
 
 # --- Generate SKU list ---
-with open(os.path.join(INPUT_DIR, "SKU_List_03_07_26.csv"), "w", newline="") as f:
+with open(os.path.join(INPUT_DIR, "SKUList_03_07_26.csv"), "w", newline="") as f:
     w = csv.writer(f)
     w.writerow(["SKU", "Product Name"])
     for sku, name, _ in SKUS:

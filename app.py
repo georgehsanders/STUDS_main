@@ -22,6 +22,7 @@ SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settin
 STATUS_UPDATED = "Updated"
 STATUS_DISCREPANCY = "Discrepancy Detected"
 STATUS_INCOMPLETE = "Incomplete — Missing File"
+STATUS_INCOMPLETE_FORMAT = "Incomplete — Unrecognized File Format"
 
 # --- Default email template ---
 DEFAULT_EMAIL_BODY = (
@@ -33,9 +34,13 @@ DEFAULT_EMAIL_BODY = (
 )
 
 # --- File pattern regexes ---
-RE_SKU_LIST = re.compile(r'^SKU_List_(\d{2}_\d{2}_\d{2})\.csv$')
-RE_VARIANCE = re.compile(r'^(\d+)_Variance\.csv$')
-RE_AUDIT_TRAIL = re.compile(r'^AuditTrail_(\d{2}_\d{2}_\d{2})\.csv$')
+RE_SKU_LIST = re.compile(r'^SKUList_(\d{2}_\d{2}_\d{2})\.csv$')
+RE_VARIANCE = re.compile(r'^(\d+)_Variance(?:_\d{2}[-_]\d{2}[-_]\d{2})?\.csv$')
+RE_AUDIT_TRAIL = re.compile(r'^AuditTrail_(\d{2}[-_]\d{2}[-_]\d{2})\.csv$')
+
+# --- Expected variance file columns ---
+VARIANCE_COLUMNS_NEW = {'sku', 'description', 'counted units', 'onhand units', 'unit variance'}
+VARIANCE_COLUMNS_LEGACY = {'sku', 'quantity'}
 
 # --- SKU exclusion ---
 RE_RS_PREFIX = re.compile(r'^RS', re.IGNORECASE)
@@ -131,7 +136,7 @@ def scan_input_files():
         if m_sku:
             sku_lists.append((filename, m_sku.group(1)))
         elif m_var:
-            store_id = m_var.group(1)
+            store_id = str(int(m_var.group(1)))  # Normalize: strip leading zeros
             variance_files[store_id] = filename
         elif m_audit:
             audit_trails.append((filename, m_audit.group(1)))
@@ -171,30 +176,66 @@ def load_sku_list(filepath):
 
 
 def load_variance(filepath):
-    """Load a per-store variance file. Real format: productid, sku, quantity, location, item cost price.
-    The quantity column is the required push (equivalent to Unit Variance)."""
+    """Load a per-store variance file. Validates expected columns before processing.
+    Supports new format (Sku, Description, Counted Units, Onhand Units, Unit Variance)
+    and legacy format (productid, sku, quantity, location, item cost price).
+    Returns None if the file has an unrecognized schema."""
+    filename = os.path.basename(filepath)
     rows = parse_csv(filepath)
-    result = []
-    for row in rows:
-        sku = row.get('sku', '').strip()
-        if not sku or is_excluded_sku(sku):
-            continue
-        try:
-            quantity = int(float(row.get('quantity', '0').strip() or '0'))
-        except (ValueError, TypeError):
-            quantity = 0
-        try:
-            cost_price = float(row.get('item cost price', '0').strip() or '0')
-        except (ValueError, TypeError):
-            cost_price = 0.0
-        result.append({
-            'product_id': row.get('productid', ''),
-            'sku': sku,
-            'quantity': quantity,
-            'location': row.get('location', ''),
-            'item_cost_price': cost_price,
-        })
-    return result
+    if not rows:
+        return []
+
+    headers = set(rows[0].keys())
+
+    # Check new expected format first
+    missing_new = VARIANCE_COLUMNS_NEW - headers
+    if not missing_new:
+        result = []
+        for row in rows:
+            sku = row.get('sku', '').strip()
+            if not sku or is_excluded_sku(sku):
+                continue
+            try:
+                quantity = int(float(row.get('unit variance', '0').strip() or '0'))
+            except (ValueError, TypeError):
+                quantity = 0
+            result.append({
+                'product_id': '',
+                'sku': sku,
+                'quantity': quantity,
+                'location': '',
+                'item_cost_price': 0.0,
+            })
+        return result
+
+    # Check legacy format
+    if VARIANCE_COLUMNS_LEGACY.issubset(headers):
+        result = []
+        for row in rows:
+            sku = row.get('sku', '').strip()
+            if not sku or is_excluded_sku(sku):
+                continue
+            try:
+                quantity = int(float(row.get('quantity', '0').strip() or '0'))
+            except (ValueError, TypeError):
+                quantity = 0
+            try:
+                cost_price = float(row.get('item cost price', '0').strip() or '0')
+            except (ValueError, TypeError):
+                cost_price = 0.0
+            result.append({
+                'product_id': row.get('productid', ''),
+                'sku': sku,
+                'quantity': quantity,
+                'location': row.get('location', ''),
+                'item_cost_price': cost_price,
+            })
+        return result
+
+    # Unrecognized schema
+    print(f"[STUDS] WARNING: {filename} — unrecognized variance file schema. "
+          f"Missing expected columns: {', '.join(sorted(missing_new))}")
+    return None
 
 
 def parse_warehouse_id(warehouse_str):
@@ -399,13 +440,26 @@ def run_reconciliation():
             })
             continue
 
+        if variance_data is None:
+            stores.append({
+                'store_id': store_id,
+                'store_name': store_name,
+                'status': STATUS_INCOMPLETE_FORMAT,
+                'active_sku_count': 0,
+                'discrepancy_count': 0,
+                'net_discrepancy': 0,
+                'sku_details': [],
+                'all_sku_details': [],
+            })
+            continue
+
         result = reconcile_store(store_id, weekly_skus, variance_data, audit_rows)
         result['store_name'] = store_name
         stores.append(result)
 
     count_updated = sum(1 for s in stores if s['status'] == STATUS_UPDATED)
     count_discrepancy = sum(1 for s in stores if s['status'] == STATUS_DISCREPANCY)
-    count_incomplete = sum(1 for s in stores if s['status'] == STATUS_INCOMPLETE)
+    count_incomplete = sum(1 for s in stores if s['status'] in (STATUS_INCOMPLETE, STATUS_INCOMPLETE_FORMAT))
 
     return {
         'stores': stores,
@@ -534,24 +588,34 @@ def email_draft(store_id):
     if not store:
         return "Store not found", 404
 
-    store_number = store_id
+    store_name = store.get('store_name', store_id)
     store_email = settings.get('store_emails', {}).get(store_id, '')
-    template = settings.get('email_body_template', DEFAULT_EMAIL_BODY)
 
-    # Build SKU table
+    # Build SKU list
     sku_lines = []
     for d in store.get('sku_details', []):
-        sku_lines.append(f"  - SKU: {d['sku']} | Required Adjustment: {d['quantity']} | Actual Adjustment: {d['actual_push']} | Discrepancy: {d['discrepancy']}")
+        sku_lines.append(
+            f"- SKU: {d['sku']} | Required Adjustment: {d['quantity']} "
+            f"| Actual Adjustment: {d['actual_push']} | Discrepancy: {d['discrepancy']}"
+        )
+    sku_list = "\n".join(sku_lines) if sku_lines else "(No specific discrepancies)"
 
-    sku_table = "\n".join(sku_lines) if sku_lines else "  (No specific discrepancies)"
-    body = template.replace('{{sku_table}}', sku_table)
+    subject = f"{store_name} — Stock Check Discrepancy"
+    body = (
+        f"Hi {store_name},\n\n"
+        "We recently completed an inventory audit based on your most recent stock check "
+        "and found discrepancies in the following SKUs at your location. Please review and "
+        "adjust these items at your earliest convenience using reason code \"Stock Check\".\n\n"
+        f"{sku_list}\n\n"
+        "Please email logistics@studs.com to confirm once these have been addressed.\n\n"
+        "Cheers,\nLogistics"
+    )
 
     draft = {
         'to': store_email,
-        'subject': f'Inventory Discrepancy — Studio {store_number}',
-        'greeting': f'Hi, Studio {store_number},',
+        'subject': subject,
         'body': body,
-        'store_name': store.get('store_name', store_id),
+        'store_name': store_name,
     }
     return jsonify(draft)
 
@@ -604,6 +668,6 @@ def export_csv():
 if __name__ == '__main__':
     os.makedirs(INPUT_DIR, exist_ok=True)
     os.makedirs(PROCESSED_DIR, exist_ok=True)
-    print(f"[STUDS] Input directory: {INPUT_DIR}")
-    print(f"[STUDS] Starting on http://localhost:5000")
+    print(f"[STUDS Stock Check] Input directory: {INPUT_DIR}")
+    print(f"[STUDS Stock Check] Starting on http://localhost:5000")
     app.run(debug=True, host='127.0.0.1', port=5000)

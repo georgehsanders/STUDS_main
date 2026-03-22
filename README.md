@@ -1,4 +1,4 @@
-# STUDS Inventory Continuity Dashboard
+# STUDS Stock Check Dashboard
 
 Detects stores that failed to push Omnicount variance data into Brightpearl by comparing per-store variance exports against the global Brightpearl audit trail.
 
@@ -29,9 +29,9 @@ Drop all files into `/input/`. The app identifies each file by its filename patt
 
 | File Type | Pattern | Example | Scope |
 |---|---|---|---|
-| Weekly SKU List | `SKU_List_MM_DD_YY.csv` | `SKU_List_03_07_26.csv` | One file, all stores |
-| Per-Store Variance | `{storeID}_Variance.csv` | `1001_Variance.csv` | One file per store |
-| Global Audit Trail | `AuditTrail_MM_DD_YY.csv` | `AuditTrail_03_07_26.csv` | One file, all stores |
+| Weekly SKU List | `SKUList_MM_DD_YY.csv` | `SKUList_03_07_26.csv` | One file, all stores |
+| Per-Store Variance | `{storeID}_Variance.csv` or `{storeID}_Variance_MM-DD-YY.csv` | `002_Variance_03-09-26.csv` | One file per store |
+| Global Audit Trail | `AuditTrail_MM_DD_YY.csv` or `AuditTrail_MM-DD-YY.csv` | `AuditTrail_03_07_26.csv` | One file, all stores |
 
 - If multiple SKU lists or audit trails are found, the most recently dated one is used (with a warning).
 - Unrecognized files are logged to the terminal and skipped.
@@ -43,13 +43,17 @@ Any SKU beginning with `RS` (case-insensitive) is excluded from all reconciliati
 ## Reconciliation Logic
 
 For each store with a variance file:
-1. **Active SKUs** = (weekly SKU list) ∩ (store variance SKUs) − (RS-prefix SKUs)
+1. **Assigned SKUs** = (weekly SKU list) ∩ (store variance SKUs) − (RS-prefix SKUs)
 2. **Required push** = Unit Variance from the variance file
 3. **Actual push** = Sum of Quantity from audit trail rows matching the store + SKU where Reference contains "Stock Update" or "Stock Check"
 4. **Discrepancy** = required push − actual push
-5. **Status**: `Updated` if all discrepancies are zero, `Discrepancy Detected` if any are non-zero, `Incomplete — Missing File` if files are missing
+5. **Status**: `Updated` if all discrepancies are zero, `Discrepancy Detected` if any are non-zero, `Incomplete — Missing File` if files are missing, `Incomplete — Unrecognized File Format` if variance file has unexpected columns
+
+## Variance File Schema Validation
+
+Expected columns: Sku, Description, Counted Units, Onhand Units, Unit Variance. Legacy format (productid, sku, quantity, location, item cost price) is also accepted. Files matching neither schema are flagged as unrecognized.
 
 ## Notes
 
-- **Store names**: v2 will add a store ID → name mapping. For now, only store IDs are displayed. See the `STORE_NAMES` placeholder in `app.py`.
+- **Store names**: The Warehouse field in the audit trail (e.g., "002 NY Hudson Yards") is used to match stores by numeric prefix to variance file store IDs.
 - The `Procfile` is included for Railway smoke-test deployment only. This is a local tool, not a hosted service.
