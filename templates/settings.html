@@ -6,76 +6,84 @@
     <title>STUDS — Settings</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
-    <header>
-        <h1>Settings</h1>
-        <div class="header-meta">
-            <a href="/hq/" class="nav-link">Dashboard</a>
-            <a href="/hq/upload" class="nav-link">Upload</a>
-            <a href="/hq/logout" class="nav-link">Logout</a>
+<body class="hq-body">
+    <header class="hq-header">
+        <div class="hq-header-left">
+            <span class="hq-logotype">STUDS</span>
+            <span class="hq-header-rule"></span>
+            <span class="hq-header-label">HQ</span>
+        </div>
+        <div class="hq-header-right">
+            <a href="/hq/" class="hq-nav-link">DASHBOARD</a>
+            <a href="/hq/upload" class="hq-nav-link">UPLOAD</a>
+            <a href="/hq/logout" class="hq-nav-link">LOGOUT</a>
         </div>
     </header>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="warnings">
-        {% for category, message in messages %}
-        <div class="warning-item {% if category == 'success' %}warning-success{% endif %}">{{ message }}</div>
-        {% endfor %}
+    <div class="hq-page-content">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="hq-warnings">
+            {% for category, message in messages %}
+            <div class="hq-warning-item {% if category == 'success' %}hq-warning-success{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="hq-section">
+                <h2 class="hq-section-heading">Change Studio Password</h2>
+                <p class="hq-help-text">Update the Studio portal login password. Leave blank to keep the current password.</p>
+                <div style="max-width: 360px;">
+                    <input type="password" name="new_studio_password" class="hq-input" placeholder="Enter new Studio password" autocomplete="new-password">
+                </div>
+            </div>
+
+            <div class="hq-section">
+                <h2 class="hq-section-heading">Change HQ Password</h2>
+                <p class="hq-help-text">Update the HQ portal login password. Leave blank to keep the current password.</p>
+                <div style="max-width: 360px;">
+                    <input type="password" name="new_hq_password" class="hq-input" placeholder="Enter new HQ password" autocomplete="new-password">
+                </div>
+            </div>
+
+            <div class="hq-section">
+                <h2 class="hq-section-heading">Email Template</h2>
+                <p class="hq-help-text">Default email body sent to stores with discrepancies. Use <code>{{sku_table}}</code> as a placeholder for the list of discrepant SKUs.</p>
+                <textarea name="email_body_template" class="hq-textarea">{{ settings.email_body_template }}</textarea>
+            </div>
+
+            <div class="hq-section">
+                <h2 class="hq-section-heading">Store Email Addresses</h2>
+                <p class="hq-help-text">Set email addresses for each store. These will be used in email drafts.</p>
+                <table class="hq-table">
+                    <thead>
+                        <tr>
+                            <th>Store</th>
+                            <th>Email Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for store in stores %}
+                        <tr>
+                            <td>{{ store.store_name }}</td>
+                            <td>
+                                <input type="email" name="store_email_{{ store.store_id }}"
+                                       value="{{ settings.store_emails.get(store.store_id, '') }}"
+                                       placeholder="store{{ store.store_id }}@studs.com"
+                                       class="hq-input">
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="submit" class="hq-btn hq-btn-lavender hq-btn-save">SAVE SETTINGS</button>
+        </form>
+
     </div>
-    {% endif %}
-    {% endwith %}
-
-    <form method="POST">
-        <div class="settings-section">
-            <h2>Change Studio Password</h2>
-            <p class="upload-help">Update the Studio portal login password. Leave blank to keep the current password.</p>
-            <div style="max-width: 360px;">
-                <input type="password" name="new_studio_password" class="settings-input" placeholder="Enter new Studio password" autocomplete="new-password">
-            </div>
-        </div>
-
-        <div class="settings-section">
-            <h2>Change HQ Password</h2>
-            <p class="upload-help">Update the HQ portal login password. Leave blank to keep the current password.</p>
-            <div style="max-width: 360px;">
-                <input type="password" name="new_hq_password" class="settings-input" placeholder="Enter new HQ password" autocomplete="new-password">
-            </div>
-        </div>
-
-        <div class="settings-section">
-            <h2>Email Template</h2>
-            <p class="upload-help">Default email body sent to stores with discrepancies. Use <code>{{sku_table}}</code> as a placeholder for the list of discrepant SKUs.</p>
-            <textarea name="email_body_template" class="settings-textarea">{{ settings.email_body_template }}</textarea>
-        </div>
-
-        <div class="settings-section">
-            <h2>Store Email Addresses</h2>
-            <p class="upload-help">Set email addresses for each store. These will be used in email drafts.</p>
-            <table class="store-table">
-                <thead>
-                    <tr>
-                        <th>Store</th>
-                        <th>Email Address</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for store in stores %}
-                    <tr>
-                        <td>{{ store.store_name }}</td>
-                        <td>
-                            <input type="email" name="store_email_{{ store.store_id }}"
-                                   value="{{ settings.store_emails.get(store.store_id, '') }}"
-                                   placeholder="store{{ store.store_id }}@studs.com"
-                                   class="settings-input">
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <button type="submit" class="btn-primary">Save Settings</button>
-    </form>
 </body>
 </html>

@@ -1060,3 +1060,171 @@ header h1 {
     color: #1a1a1a;
     resize: vertical;
 }
+
+/* --- Refresh button specificity fix --- */
+
+body.hq-body #refresh-btn {
+    background: #c8f135;
+    color: #000000;
+    border: 1.5px solid #000000;
+    border-radius: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0 18px;
+    height: 34px;
+}
+
+body.hq-body #refresh-btn:hover {
+    text-decoration: underline;
+    background: #c8f135;
+}
+
+body.hq-body #refresh-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    text-decoration: none;
+}
+
+/* --- Page content container (Upload & Settings) --- */
+
+.hq-page-content {
+    padding: 32px;
+    max-width: 960px;
+    margin: 0 auto;
+}
+
+/* --- Shared section styles (Upload & Settings) --- */
+
+.hq-section {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 0;
+    padding: 28px 32px;
+    margin-bottom: 24px;
+}
+
+.hq-section-heading {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    margin-bottom: 12px;
+}
+
+.hq-help-text {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 12px;
+    color: #999999;
+    margin-bottom: 16px;
+}
+
+/* --- Upload form layout --- */
+
+.hq-upload-form {
+    display: flex;
+    gap: 14px;
+    align-items: center;
+}
+
+.hq-upload-form input[type="file"] {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    color: #1a1a1a;
+}
+
+/* --- Outline button (Delete All) --- */
+
+.hq-btn-outline {
+    background: #ffffff;
+    color: #000000;
+    border: 1.5px solid #000000;
+    border-radius: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0 18px;
+    height: 34px;
+}
+
+.hq-btn-outline:hover {
+    text-decoration: underline;
+}
+
+/* --- Per-row delete button --- */
+
+.hq-btn-delete {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #000000;
+    border-radius: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 2px 10px;
+}
+
+.hq-btn-delete:hover {
+    text-decoration: underline;
+}
+
+/* --- Table cell styling within hq-body pages --- */
+
+.hq-body .hq-table tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e0e0e0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    color: #1a1a1a;
+}
+
+.hq-body .hq-table tbody tr:hover {
+    background: #f7f7f7;
+}
+
+/* --- Save settings button --- */
+
+.hq-btn-save {
+    height: 40px;
+    padding: 0 24px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+/* --- Success warning variant --- */
+
+.hq-warning-success {
+    background: #f0fbd4;
+    border: 1px solid #e0e0e0;
+    color: #2d6930;
+}
+
+/* --- Override old settings-input and settings-textarea within hq-body --- */
+
+body.hq-body .settings-input {
+    border: 1px solid #000000;
+    border-radius: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    padding: 8px 10px;
+}
+
+body.hq-body .settings-textarea {
+    border: 1px solid #000000;
+    border-radius: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    padding: 10px;
+}

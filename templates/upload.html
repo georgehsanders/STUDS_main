@@ -6,69 +6,77 @@
     <title>STUDS — Upload Files</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
-    <header>
-        <h1>Upload Input Files</h1>
-        <div class="header-meta">
-            <a href="/hq/" class="nav-link">Dashboard</a>
-            <a href="/hq/settings" class="nav-link">Settings</a>
-            <a href="/hq/logout" class="nav-link">Logout</a>
+<body class="hq-body">
+    <header class="hq-header">
+        <div class="hq-header-left">
+            <span class="hq-logotype">STUDS</span>
+            <span class="hq-header-rule"></span>
+            <span class="hq-header-label">HQ</span>
+        </div>
+        <div class="hq-header-right">
+            <a href="/hq/" class="hq-nav-link">DASHBOARD</a>
+            <a href="/hq/settings" class="hq-nav-link">SETTINGS</a>
+            <a href="/hq/logout" class="hq-nav-link">LOGOUT</a>
         </div>
     </header>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="warnings">
-        {% for category, message in messages %}
-        <div class="warning-item {% if category == 'success' %}warning-success{% endif %}">{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
+    <div class="hq-page-content">
 
-    <div class="upload-section">
-        <h2>Upload New Files</h2>
-        <p class="upload-help">Upload variance files, SKU lists, or audit trail CSVs. Files will overwrite existing files with the same name in /input/.</p>
-        <form method="POST" enctype="multipart/form-data" class="upload-form">
-            <input type="file" name="files" multiple accept=".csv" required>
-            <button type="submit">Upload</button>
-        </form>
-    </div>
-
-    <div class="upload-section">
-        <h2>Current Files in /input/</h2>
-        {% if files %}
-        <form method="POST" action="/hq/delete-all-files" style="margin-bottom: 10px;">
-            <button type="submit" class="btn-delete-all" onclick="return confirm('Are you sure you want to delete all files in /input/?')">Delete All Files</button>
-        </form>
-        <table class="store-table">
-            <thead>
-                <tr>
-                    <th>File Name</th>
-                    <th>Last Modified</th>
-                    <th>Size</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for f in files %}
-                <tr>
-                    <td>{{ f.name }}</td>
-                    <td>{{ f.modified }}</td>
-                    <td>{{ f.size }}</td>
-                    <td>
-                        <form method="POST" action="/hq/delete-file" style="margin:0;">
-                            <input type="hidden" name="filename" value="{{ f.name }}">
-                            <button type="submit" class="btn-delete" onclick="return confirm('Are you sure you want to delete {{ f.name }}?')">Delete</button>
-                        </form>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="no-disc">No files found in /input/.</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="hq-warnings">
+            {% for category, message in messages %}
+            <div class="hq-warning-item {% if category == 'success' %}hq-warning-success{% endif %}">{{ message }}</div>
+            {% endfor %}
+        </div>
         {% endif %}
+        {% endwith %}
+
+        <div class="hq-section">
+            <h2 class="hq-section-heading">Upload New Files</h2>
+            <p class="hq-help-text">Upload variance files, SKU lists, or audit trail CSVs. Files will overwrite existing files with the same name in /input/.</p>
+            <form method="POST" enctype="multipart/form-data" class="hq-upload-form">
+                <input type="file" name="files" multiple accept=".csv" required>
+                <button type="submit" class="hq-btn hq-btn-lavender">UPLOAD</button>
+            </form>
+        </div>
+
+        <div class="hq-section">
+            <h2 class="hq-section-heading">Current Files in /input/</h2>
+            {% if files %}
+            <form method="POST" action="/hq/delete-all-files" style="margin-bottom: 14px;">
+                <button type="submit" class="hq-btn hq-btn-outline" onclick="return confirm('Are you sure you want to delete all files in /input/?')">DELETE ALL FILES</button>
+            </form>
+            <table class="hq-table">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>Last Modified</th>
+                        <th>Size</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in files %}
+                    <tr>
+                        <td>{{ f.name }}</td>
+                        <td>{{ f.modified }}</td>
+                        <td>{{ f.size }}</td>
+                        <td>
+                            <form method="POST" action="/hq/delete-file" style="margin:0;">
+                                <input type="hidden" name="filename" value="{{ f.name }}">
+                                <button type="submit" class="hq-btn-delete" onclick="return confirm('Are you sure you want to delete {{ f.name }}?')">DELETE</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="hq-no-disc">No files found in /input/.</p>
+            {% endif %}
+        </div>
+
     </div>
 </body>
 </html>
