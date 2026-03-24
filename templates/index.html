@@ -3,185 +3,194 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STUDS Stock Check Dashboard</title>
+    <title>STUDS HQ</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
-    <header>
-        <h1>STUDS Stock Check Dashboard</h1>
-        <div class="header-meta">
-            <span>Last loaded: <strong id="last-loaded">{{ data.last_loaded }}</strong></span>
-            <button id="refresh-btn" onclick="refreshData()">Refresh</button>
-            <a href="/hq/export" class="btn-export">Export CSV</a>
-            <a href="/hq/upload" class="nav-link">Upload</a>
-            <a href="/hq/settings" class="nav-link">Settings</a>
-            <a href="/hq/logout" class="nav-link">Logout</a>
+<body class="hq-body">
+
+    <header class="hq-header">
+        <div class="hq-header-left">
+            <span class="hq-logotype">STUDS</span>
+            <span class="hq-header-rule"></span>
+            <span class="hq-header-label">HQ</span>
+        </div>
+        <div class="hq-header-right">
+            <span class="hq-timestamp">Updated <strong id="last-loaded">{{ data.last_loaded }}</strong></span>
+            <a href="/hq/upload" class="hq-nav-link">UPLOAD</a>
+            <a href="/hq/settings" class="hq-nav-link">SETTINGS</a>
+            <a href="/hq/logout" class="hq-nav-link">LOGOUT</a>
+            <button id="refresh-btn" class="hq-btn hq-btn-lime" onclick="refreshData()">REFRESH</button>
+            <a href="/hq/export" class="hq-btn hq-btn-lavender">EXPORT CSV</a>
         </div>
     </header>
 
-    {% if data.sku_bypass %}
-    <div class="sku-bypass-banner">
-        &#9888; No SKU list loaded &mdash; reconciling all variance SKUs. Upload a SKU list file to enable standard filtering.
-    </div>
-    {% endif %}
+    <main class="hq-main">
 
-    {% if data.warnings %}
-    <div class="warnings">
-        {% for w in data.warnings %}
-        <div class="warning-item">{{ w }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
+        {% if data.sku_bypass %}
+        <div class="hq-bypass-banner">
+            &#9888; No SKU list loaded &mdash; reconciling all variance SKUs. Upload a SKU list file to enable standard filtering.
+        </div>
+        {% endif %}
 
-    <div class="summary-bar">
-        <div class="summary-card">
-            <div class="summary-label">Total Stores</div>
-            <div class="summary-value" id="total-stores">{{ data.total_stores }}</div>
+        {% if data.warnings %}
+        <div class="hq-warnings">
+            {% for w in data.warnings %}
+            <div class="hq-warning-item">{{ w }}</div>
+            {% endfor %}
         </div>
-        <div class="summary-card status-updated">
-            <div class="summary-label">Updated</div>
-            <div class="summary-value" id="count-updated">{{ data.count_updated }}</div>
-        </div>
-        <div class="summary-card status-discrepancy">
-            <div class="summary-label">Discrepancy</div>
-            <div class="summary-value" id="count-discrepancy">{{ data.count_discrepancy }}</div>
-        </div>
-        <div class="summary-card status-incomplete">
-            <div class="summary-label">Incomplete</div>
-            <div class="summary-value" id="count-incomplete">{{ data.count_incomplete }}</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-label">SKU List</div>
-            <div class="summary-value-sm" id="sku-list-name">{{ data.sku_list_filename or 'None' }}</div>
-            <div class="summary-sub" id="sku-count">{{ data.sku_count }} SKUs</div>
-        </div>
-        <div class="summary-card">
-            <div class="summary-label">Audit Date Range</div>
-            <div class="summary-value-sm" id="audit-range">
-                {% if data.audit_date_min %}
-                    {{ data.audit_date_min }} &rarr; {{ data.audit_date_max }}
-                {% else %}
-                    N/A
-                {% endif %}
+        {% endif %}
+
+        <div class="hq-summary-bar">
+            <div class="hq-summary-cell">
+                <div class="hq-summary-label">Total Stores</div>
+                <div class="hq-summary-value" id="total-stores">{{ data.total_stores }}</div>
+            </div>
+            <div class="hq-summary-cell hq-summary-updated">
+                <div class="hq-summary-label">Updated</div>
+                <div class="hq-summary-value" id="count-updated">{{ data.count_updated }}</div>
+            </div>
+            <div class="hq-summary-cell hq-summary-discrepancy">
+                <div class="hq-summary-label">Discrepancy</div>
+                <div class="hq-summary-value" id="count-discrepancy">{{ data.count_discrepancy }}</div>
+            </div>
+            <div class="hq-summary-cell hq-summary-incomplete">
+                <div class="hq-summary-label">Incomplete</div>
+                <div class="hq-summary-value" id="count-incomplete">{{ data.count_incomplete }}</div>
+            </div>
+            <div class="hq-summary-cell">
+                <div class="hq-summary-label">SKU List</div>
+                <div class="hq-summary-value-sm" id="sku-list-name">{{ data.sku_list_filename or 'None' }}</div>
+                <div class="hq-summary-sub" id="sku-count">{{ data.sku_count }} SKUs</div>
+            </div>
+            <div class="hq-summary-cell hq-summary-cell-last">
+                <div class="hq-summary-label">Audit Date Range</div>
+                <div class="hq-summary-value-sm" id="audit-range">
+                    {% if data.audit_date_min %}
+                        {{ data.audit_date_min }} &rarr; {{ data.audit_date_max }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="controls">
-        <label>Filter:
-            <select id="filter-status" onchange="applyFilters()">
-                <option value="all">All</option>
-                <option value="Updated">Updated</option>
-                <option value="Discrepancy Detected">Discrepancy Detected</option>
-                <option value="Incomplete">Incomplete</option>
-            </select>
-        </label>
-        <label>Sort:
-            <select id="sort-by" onchange="applyFilters()">
-                <option value="store_id">Store ID</option>
-                <option value="status">Status</option>
-                <option value="discrepancy_count">Discrepancy Count</option>
-            </select>
-        </label>
-    </div>
+        <div class="hq-controls">
+            <label class="hq-control-label">Filter
+                <select id="filter-status" class="hq-select" onchange="applyFilters()">
+                    <option value="all">All</option>
+                    <option value="Updated">Updated</option>
+                    <option value="Discrepancy Detected">Discrepancy Detected</option>
+                    <option value="Incomplete">Incomplete</option>
+                </select>
+            </label>
+            <label class="hq-control-label">Sort
+                <select id="sort-by" class="hq-select" onchange="applyFilters()">
+                    <option value="store_id">Store ID</option>
+                    <option value="status">Status</option>
+                    <option value="discrepancy_count">Discrepancy Count</option>
+                </select>
+            </label>
+        </div>
 
-    <table class="store-table" id="store-table">
-        <thead>
-            <tr>
-                <th></th>
-                <th>Store</th>
-                <th>Status</th>
-                <th>Assigned SKUs</th>
-                <th>Discrepancies</th>
-                <th>Net Discrepancy</th>
-                <th></th>
-            </tr>
-        </thead>
-        <tbody id="store-tbody">
-            {% for store in data.stores %}
-            <tr class="store-row" data-store-id="{{ store.store_id }}" data-status="{{ store.status }}" data-discrepancy-count="{{ store.discrepancy_count }}" onclick="toggleDetail('{{ store.store_id }}')">
-                <td class="expand-arrow" id="arrow-{{ store.store_id }}">&#9654;</td>
-                <td>{{ store.store_name }}</td>
-                <td>
-                    <span class="badge
-                        {% if store.status == 'Updated' %}badge-updated
-                        {% elif store.status == 'Discrepancy Detected' %}badge-discrepancy
-                        {% else %}badge-incomplete{% endif %}">
-                        {{ store.status }}
-                    </span>
-                </td>
-                <td>{{ store.active_sku_count }}</td>
-                <td>{{ store.discrepancy_count }}</td>
-                <td>{{ store.net_discrepancy }}</td>
-                <td class="action-cell" onclick="event.stopPropagation()">
-                </td>
-            </tr>
-            <tr class="detail-row" id="detail-{{ store.store_id }}" style="display:none;">
-                <td colspan="7">
-                    {% if store.sku_details %}
-                    <table class="detail-table">
-                        <thead>
-                            <tr>
-                                <th>SKU</th>
-                                <th>Product ID</th>
-                                <th>Required Push</th>
-                                <th>Location</th>
-                                <th>Item Cost Price</th>
-                                <th>Actual Push</th>
-                                <th>Discrepancy</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for d in store.sku_details %}
-                            <tr>
-                                <td>{{ d.sku }}</td>
-                                <td>{{ d.product_id }}</td>
-                                <td>{{ d.quantity }}</td>
-                                <td>{{ d.location }}</td>
-                                <td>{{ d.item_cost_price }}</td>
-                                <td>{{ d.actual_push }}</td>
-                                <td class="{% if d.discrepancy != 0 %}disc-nonzero{% endif %}">{{ d.discrepancy }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    {% if store.status == 'Discrepancy Detected' %}
-                    <div class="detail-actions">
-                        <button class="btn-email" onclick="event.stopPropagation(); showEmailDraft('{{ store.store_id }}')">Generate Email</button>
-                    </div>
-                    {% endif %}
-                    {% else %}
-                    <p class="no-disc">No discrepancies — all SKUs matched.</p>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <table class="hq-table" id="store-table">
+            <thead>
+                <tr>
+                    <th class="hq-th-arrow"></th>
+                    <th>Store</th>
+                    <th>Status</th>
+                    <th>Assigned SKUs</th>
+                    <th>Discrepancies</th>
+                    <th>Net Discrepancy</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="store-tbody">
+                {% for store in data.stores %}
+                <tr class="store-row hq-store-row" data-store-id="{{ store.store_id }}" data-status="{{ store.status }}" data-discrepancy-count="{{ store.discrepancy_count }}" onclick="toggleDetail('{{ store.store_id }}')">
+                    <td class="hq-expand-arrow" id="arrow-{{ store.store_id }}">&#9654;</td>
+                    <td>{{ store.store_name }}</td>
+                    <td>
+                        <span class="hq-badge
+                            {% if store.status == 'Updated' %}hq-badge-updated
+                            {% elif store.status == 'Discrepancy Detected' %}hq-badge-discrepancy
+                            {% else %}hq-badge-incomplete{% endif %}">
+                            {{ store.status }}
+                        </span>
+                    </td>
+                    <td>{{ store.active_sku_count }}</td>
+                    <td>{{ store.discrepancy_count }}</td>
+                    <td>{{ store.net_discrepancy }}</td>
+                    <td class="hq-action-cell" onclick="event.stopPropagation()">
+                    </td>
+                </tr>
+                <tr class="detail-row hq-detail-row" id="detail-{{ store.store_id }}" style="display:none;">
+                    <td colspan="7">
+                        {% if store.sku_details %}
+                        <table class="hq-detail-table">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Product ID</th>
+                                    <th>Required Push</th>
+                                    <th>Location</th>
+                                    <th>Item Cost Price</th>
+                                    <th>Actual Push</th>
+                                    <th>Discrepancy</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for d in store.sku_details %}
+                                <tr>
+                                    <td>{{ d.sku }}</td>
+                                    <td>{{ d.product_id }}</td>
+                                    <td>{{ d.quantity }}</td>
+                                    <td>{{ d.location }}</td>
+                                    <td>{{ d.item_cost_price }}</td>
+                                    <td>{{ d.actual_push }}</td>
+                                    <td class="{% if d.discrepancy != 0 %}hq-disc-nonzero{% endif %}">{{ d.discrepancy }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        {% if store.status == 'Discrepancy Detected' %}
+                        <div class="hq-detail-actions">
+                            <button class="hq-btn hq-btn-email" onclick="event.stopPropagation(); showEmailDraft('{{ store.store_id }}')">GENERATE EMAIL</button>
+                        </div>
+                        {% endif %}
+                        {% else %}
+                        <p class="hq-no-disc">No discrepancies — all SKUs matched.</p>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+    </main>
 
     <!-- Email Draft Modal -->
-    <div id="email-modal" class="modal" style="display:none;">
-        <div class="modal-content">
-            <div class="modal-header">
+    <div id="email-modal" class="hq-modal" style="display:none;">
+        <div class="hq-modal-content">
+            <div class="hq-modal-header">
                 <h2 id="modal-title">Email Draft</h2>
-                <button class="modal-close" onclick="closeEmailModal()">&times;</button>
+                <button class="hq-modal-close" onclick="closeEmailModal()">&times;</button>
             </div>
-            <div class="modal-body">
-                <div class="form-group">
+            <div class="hq-modal-body">
+                <div class="hq-form-group">
                     <label>To:</label>
-                    <input type="text" id="email-to" class="settings-input" placeholder="store email">
+                    <input type="text" id="email-to" class="hq-input" placeholder="store email">
                 </div>
-                <div class="form-group">
+                <div class="hq-form-group">
                     <label>Subject:</label>
-                    <input type="text" id="email-subject" class="settings-input" readonly>
+                    <input type="text" id="email-subject" class="hq-input" readonly>
                 </div>
-                <div class="form-group">
+                <div class="hq-form-group">
                     <label>Body:</label>
-                    <textarea id="email-body" class="settings-textarea" rows="14" readonly></textarea>
+                    <textarea id="email-body" class="hq-textarea" rows="14" readonly></textarea>
                 </div>
             </div>
-            <div class="modal-footer">
-                <button class="btn-primary" onclick="copyEmailDraft()">Copy to Clipboard</button>
+            <div class="hq-modal-footer">
+                <button class="hq-btn hq-btn-lime btn-primary" onclick="copyEmailDraft()">COPY TO CLIPBOARD</button>
             </div>
         </div>
     </div>
@@ -254,7 +263,7 @@
                 .catch(function(err) {
                     alert('Refresh failed: ' + err);
                     btn.disabled = false;
-                    btn.textContent = 'Refresh';
+                    btn.textContent = 'REFRESH';
                 });
         }
 
@@ -283,9 +292,9 @@
             var body = document.getElementById('email-body').value;
             var full = 'To: ' + to + '\nSubject: ' + subject + '\n\n' + body;
             navigator.clipboard.writeText(full).then(function() {
-                var btn = document.querySelector('.modal-footer .btn-primary');
+                var btn = document.querySelector('.hq-modal-footer .btn-primary');
                 btn.textContent = 'Copied!';
-                setTimeout(function() { btn.textContent = 'Copy to Clipboard'; }, 2000);
+                setTimeout(function() { btn.textContent = 'COPY TO CLIPBOARD'; }, 2000);
             });
         }
 
