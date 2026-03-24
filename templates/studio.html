@@ -3,15 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>STUDS — Studio Portal</title>
+    <title>STUDS — Studio</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
-<body>
-    <header>
-        <h1>Studio Portal</h1>
-        <div class="header-meta">
-            <a href="/studio/logout" class="nav-link">Logout</a>
+<body class="studio-body">
+
+    <header class="studio-header">
+        <div class="studio-header-left">
+            <span class="studio-logotype">STUDS</span>
+            <span class="studio-header-rule"></span>
+            <span class="studio-header-label">STUDIO</span>
+        </div>
+        <div class="studio-header-right">
+            {% if sku_list_filename %}
+            <span class="studio-filename">{{ sku_list_filename }}</span>
+            {% endif %}
+            <a href="/studio/logout" class="studio-nav-link">LOGOUT</a>
         </div>
     </header>
+
+    {% if no_sku_list %}
+    <div class="studio-empty">
+        <p class="studio-empty-message">No active SKU list. Please check back when a count has been scheduled.</p>
+    </div>
+    {% else %}
+    <div class="studio-main">
+        <div class="studio-search-bar">
+            <input type="text" id="studio-search" class="studio-search-input" placeholder="Search SKUs or descriptions..." oninput="filterCards()">
+            <p class="studio-sku-count" id="studio-sku-count">{{ sku_items|length }} SKUs assigned this week — {{ sku_list_filename }}</p>
+        </div>
+
+        <div class="studio-grid" id="studio-grid">
+            {% for item in sku_items %}
+            <div class="studio-card" data-sku="{{ item.sku|lower }}" data-desc="{{ item.description|lower }}">
+                {% if item.image_filename %}
+                <div class="studio-card-img">
+                    <img src="/database/images/{{ item.image_filename }}" alt="{{ item.sku }}">
+                </div>
+                {% else %}
+                <div class="studio-card-img studio-card-noimg">
+                    <span>No image</span>
+                </div>
+                {% endif %}
+                <div class="studio-card-sku">{{ item.sku }}</div>
+                <div class="studio-card-desc">{{ item.description }}</div>
+                <svg id="barcode-{{ item.sku }}"></svg>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <script>
+        var totalSkus = {{ sku_items|length }};
+        var skuListFilename = {{ sku_list_filename|tojson }};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            {% for item in sku_items %}
+            try {
+                JsBarcode("#barcode-{{ item.sku }}", "{{ item.sku }}", {
+                    format: "CODE128",
+                    width: 1.5,
+                    height: 40,
+                    displayValue: false,
+                    margin: 0
+                });
+            } catch(e) {}
+            {% endfor %}
+        });
+
+        function filterCards() {
+            var query = document.getElementById('studio-search').value.toLowerCase();
+            var cards = document.querySelectorAll('.studio-card');
+            var visible = 0;
+            cards.forEach(function(card) {
+                var sku = card.getAttribute('data-sku');
+                var desc = card.getAttribute('data-desc');
+                if (sku.indexOf(query) !== -1 || desc.indexOf(query) !== -1) {
+                    card.style.display = '';
+                    visible++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            var countEl = document.getElementById('studio-sku-count');
+            if (query) {
+                countEl.textContent = 'Showing ' + visible + ' of ' + totalSkus + ' SKUs';
+            } else {
+                countEl.textContent = totalSkus + ' SKUs assigned this week — ' + skuListFilename;
+            }
+        }
+    </script>
 </body>
 </html>

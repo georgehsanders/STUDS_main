@@ -6,7 +6,7 @@ import json
 from datetime import datetime
 from functools import wraps
 from flask import (Flask, render_template, jsonify, request, redirect,
-                   url_for, session, send_file, flash)
+                   url_for, session, send_file, send_from_directory, flash)
 
 app = Flask(__name__)
 
@@ -18,6 +18,9 @@ app.secret_key = 'studs-secret-key-change-in-production'
 INPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'input')
 PROCESSED_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'processed')
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.json')
+DATABASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'database')
+MASTER_DIR = os.path.join(DATABASE_DIR, 'master')
+IMAGES_DIR = os.path.join(DATABASE_DIR, 'images')
 
 # --- Status constants ---
 STATUS_UPDATED = "Updated"
@@ -183,6 +186,32 @@ def load_sku_list(filepath):
         if sku and not is_excluded_sku(sku):
             skus.add(sku)
     return skus
+
+
+def load_master_skus():
+    """Load SKU_Master.csv and return a dict of SKU (uppercase) -> DESCRIPTION."""
+    filepath = os.path.join(MASTER_DIR, 'SKU_Master.csv')
+    if not os.path.isfile(filepath):
+        return {}
+    rows = parse_csv(filepath)
+    result = {}
+    for row in rows:
+        sku = row.get('sku', '').strip().upper()
+        desc = row.get('description', '').strip()
+        if sku:
+            result[sku] = desc
+    return result
+
+
+def find_image_for_sku(sku):
+    """Find an image file in IMAGES_DIR whose name starts with the SKU (case-insensitive)."""
+    if not os.path.isdir(IMAGES_DIR):
+        return None
+    sku_lower = sku.lower()
+    for fname in os.listdir(IMAGES_DIR):
+        if fname.lower().startswith(sku_lower):
+            return fname
+    return None
 
 
 def load_variance(filepath):
@@ -499,10 +528,50 @@ def studio_logout():
     return redirect(url_for('landing'))
 
 
+@app.route('/database/images/<filename>')
+def serve_image(filename):
+    return send_from_directory(IMAGES_DIR, filename)
+
+
 @app.route('/studio/')
 @studio_login_required
 def studio_index():
-    return render_template('studio.html')
+    scan = scan_input_files()
+    sku_list_filename = None
+    no_sku_list = True
+    sku_items = []
+
+    if scan['sku_lists']:
+        no_sku_list = False
+        sku_list_filename = scan['sku_lists'][0][0]
+        filepath = os.path.join(INPUT_DIR, sku_list_filename)
+
+        # Parse SKU list with product names
+        sku_rows = parse_csv(filepath)
+        sku_names = {}
+        sku_set = set()
+        for row in sku_rows:
+            sku = row.get('sku', '').strip()
+            name = row.get('product name', '').strip()
+            if sku and not is_excluded_sku(sku):
+                sku_set.add(sku)
+                sku_names[sku] = name
+
+        master = load_master_skus()
+
+        for sku in sorted(sku_set):
+            desc = master.get(sku.upper(), '') or sku_names.get(sku, '') or sku
+            image_filename = find_image_for_sku(sku)
+            sku_items.append({
+                'sku': sku,
+                'description': desc,
+                'image_filename': image_filename,
+            })
+
+    return render_template('studio.html',
+                           sku_items=sku_items,
+                           sku_list_filename=sku_list_filename,
+                           no_sku_list=no_sku_list)
 
 
 # --- HQ portal ---

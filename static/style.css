@@ -1230,3 +1230,224 @@ body.hq-body .settings-textarea {
     font-size: 13px;
     padding: 10px;
 }
+
+
+/* ==========================================================================
+   STUDIO PORTAL — Count reference page
+   All classes prefixed with studio- to avoid collisions.
+   ========================================================================== */
+
+.studio-body {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    background: #ffffff;
+    color: #1a1a1a;
+    padding: 0;
+    margin: 0;
+    max-width: none;
+}
+
+/* --- Header --- */
+
+.studio-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 28px;
+    height: 52px;
+    background: #ffffff;
+    border-bottom: 1.5px solid #000000;
+}
+
+.studio-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+}
+
+.studio-logotype {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    color: #1a1a1a;
+}
+
+.studio-header-rule {
+    display: inline-block;
+    width: 1px;
+    height: 22px;
+    background: #d0d0d0;
+}
+
+.studio-header-label {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #999999;
+}
+
+.studio-header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+}
+
+.studio-filename {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    color: #999999;
+    letter-spacing: 0.02em;
+}
+
+.studio-nav-link {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: #1a1a1a;
+}
+
+.studio-nav-link:hover {
+    text-decoration: underline;
+}
+
+/* --- Empty state --- */
+
+.studio-empty {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 52px);
+    padding-bottom: 10vh;
+}
+
+.studio-empty-message {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    color: #999999;
+    letter-spacing: 0.02em;
+}
+
+/* --- Main content --- */
+
+.studio-main {
+    padding: 24px 28px 40px 28px;
+}
+
+/* --- Search bar --- */
+
+.studio-search-bar {
+    max-width: 400px;
+    margin-bottom: 20px;
+}
+
+.studio-search-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #000000;
+    border-radius: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    color: #1a1a1a;
+    background: #ffffff;
+}
+
+.studio-search-input::placeholder {
+    color: #bbbbbb;
+}
+
+.studio-sku-count {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    color: #999999;
+    margin-top: 8px;
+    letter-spacing: 0.02em;
+}
+
+/* --- SKU Grid --- */
+
+.studio-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+@media (max-width: 1024px) {
+    .studio-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .studio-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* --- SKU Card --- */
+
+.studio-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 0;
+    padding: 16px;
+}
+
+.studio-card-img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.studio-card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.studio-card-noimg {
+    background: #f5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.studio-card-noimg span {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    color: #cccccc;
+    letter-spacing: 0.05em;
+}
+
+.studio-card-sku {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+}
+
+.studio-card-desc {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    color: #555555;
+    margin-bottom: 12px;
+}
+
+.studio-card svg {
+    width: 100%;
+    height: auto;
+}
