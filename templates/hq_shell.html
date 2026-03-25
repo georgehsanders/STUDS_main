@@ -21,26 +21,30 @@
                 <div class="hq-logotype">STUDS</div>
                 <div class="hq-confidential-sub">CONFIDENTIAL</div>
             </div>
-            <nav class="hq-z1-right">
-                <a href="/hq/upload" class="hq-portal-link">UPLOAD</a>
-                <span class="hq-pipe">|</span>
-                <button class="hq-portal-link hq-portal-btn" id="refresh-btn" onclick="doRefresh();">REFRESH</button>
-                <span class="hq-pipe">|</span>
-                <a href="/hq/settings" class="hq-portal-link">SETTINGS</a>
-            </nav>
+            <div class="hq-z1-right">
+                <div class="hq-timestamp-box">
+                    <span class="hq-timestamp-label">UPDATED</span>
+                    <span id="last-loaded">{{ data.last_loaded }}</span>
+                </div>
+                <nav class="hq-z1-right-nav">
+                    <a href="/hq/upload" class="hq-portal-link">UPLOAD</a>
+                    <span class="hq-pipe">|</span>
+                    <button class="hq-portal-link hq-portal-btn" id="refresh-btn" onclick="doRefresh();">REFRESH</button>
+                    <span class="hq-pipe">|</span>
+                    <a href="/hq/settings" class="hq-portal-link">SETTINGS</a>
+                </nav>
+            </div>
         </div>
         <hr class="hq-header-rule">
-        <div class="hq-zone2">
-            <div class="hq-zone2-left">
-                <a href="#" class="hq-section-link" data-section="dashboard" onclick="event.preventDefault(); loadSection('dashboard');">DASHBOARD</a>
-                <a href="#" class="hq-section-link" data-section="analytics" onclick="event.preventDefault(); loadSection('analytics');">ANALYTICS</a>
-                <a href="#" class="hq-section-link" data-section="database" onclick="event.preventDefault(); loadSection('database');">DATABASE</a>
-                <a href="#" class="hq-section-link" data-section="studios" onclick="event.preventDefault(); loadSection('studios');">STUDIOS</a>
-            </div>
-            <div class="hq-zone2-right">
-                <span class="hq-timestamp-box" id="last-loaded">Updated: {{ data.last_loaded }}</span>
-            </div>
-        </div>
+        <nav class="hq-zone2">
+            <a href="#" class="hq-section-link active" data-section="dashboard" onclick="loadSection('dashboard'); return false;">DASHBOARD</a>
+            <span class="hq-pipe">|</span>
+            <a href="#" class="hq-section-link" data-section="analytics" onclick="loadSection('analytics'); return false;">ANALYTICS</a>
+            <span class="hq-pipe">|</span>
+            <a href="#" class="hq-section-link" data-section="database" onclick="loadSection('database'); return false;">DATABASE</a>
+            <span class="hq-pipe">|</span>
+            <a href="#" class="hq-section-link" data-section="studios" onclick="loadSection('studios'); return false;">STUDIOS</a>
+        </nav>
     </header>
 
     <main id="hq-content" class="hq-main"></main>
@@ -48,17 +52,21 @@
     <script>
         var storeDataGlobal = {{ db_stores | tojson }};
         var currentSection = null;
+        var activeStoreId = null;
 
         function loadSection(section) {
             currentSection = section;
             document.querySelectorAll('.hq-section-link').forEach(function(l) {
-                l.style.textDecoration = l.dataset.section === section ? 'underline' : 'none';
+                if (l.dataset.section === section) {
+                    l.classList.add('active');
+                } else {
+                    l.classList.remove('active');
+                }
             });
             fetch('/hq/section/' + section)
                 .then(function(r) { return r.text(); })
                 .then(function(html) {
                     document.getElementById('hq-content').innerHTML = html;
-                    // Execute scripts in the fragment
                     var scripts = document.getElementById('hq-content').querySelectorAll('script');
                     scripts.forEach(function(old) {
                         var s = document.createElement('script');
@@ -75,7 +83,7 @@
             fetch('/hq/refresh', { method: 'POST' })
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
-                    document.getElementById('last-loaded').textContent = 'Updated: ' + data.last_loaded;
+                    document.getElementById('last-loaded').textContent = data.last_loaded;
                     if (currentSection === 'dashboard') loadSection('dashboard');
                 })
                 .catch(function(err) { alert('Refresh failed: ' + err); });
@@ -170,7 +178,8 @@
 
         // Studios JS functions
         function initStudios() {
-            document.getElementById('studios-search').focus();
+            var searchEl = document.getElementById('studios-search');
+            if (searchEl) searchEl.focus();
         }
 
         function filterStudios() {
@@ -182,7 +191,7 @@
                 var name = row.dataset.name;
                 if (!query || sid.indexOf(query) !== -1 || name.indexOf(query) !== -1) {
                     row.style.display = '';
-                    if (query) matches.push({sid: sid, name: row.children[0].textContent});
+                    if (query) matches.push({sid: sid, name: row.children[1].textContent});
                 } else {
                     row.style.display = 'none';
                 }
@@ -199,58 +208,121 @@
             }
         }
 
+        function getDotClass(status) {
+            if (!status) return 'hq-dot-unknown';
+            if (status === 'Updated') return 'hq-dot-updated';
+            if (status === 'Discrepancy Detected') return 'hq-dot-discrepancy';
+            if (status.indexOf('Incomplete') === 0) return 'hq-dot-incomplete';
+            return 'hq-dot-unknown';
+        }
+
+        function getLocalTime(tz) {
+            try {
+                var opts = {hour: 'numeric', minute: '2-digit', timeZoneName: 'short', timeZone: tz};
+                return new Date().toLocaleTimeString('en-US', opts);
+            } catch(e) { return '—'; }
+        }
+
         function showStoreProfile(storeId) {
             var dd = document.getElementById('studios-dropdown');
             if (dd) dd.style.display = 'none';
+            activeStoreId = storeId;
             var store = storeDataGlobal.find(function(s) { return s.store_id === storeId; });
             if (!store) return;
             var prof = document.getElementById('studios-profile');
             prof.style.display = 'block';
+            var statusEl = document.querySelector('.hq-studios-row[data-sid="' + storeId + '"]');
+            var status = statusEl ? statusEl.dataset.status : '';
+            var dotClass = getDotClass(status);
             prof.innerHTML =
                 '<div class="hq-section">' +
-                '<h2 class="hq-section-heading">' + store.name + '</h2>' +
-                '<div class="hq-studios-profile-grid">' +
-                '<div><span class="hq-summary-label">STORE NUMBER</span><div>' + store.store_id + '</div></div>' +
-                '<div><span class="hq-summary-label">TIMEZONE</span><div>' + store.timezone + '</div></div>' +
-                '<div><span class="hq-summary-label">USERNAME</span><div>' + store.username + '</div></div>' +
-                '<div><span class="hq-summary-label">EMAIL</span><div>' + (store.email || '—') + '</div></div>' +
-                '</div>' +
-                '<h3 class="hq-subsection-heading" style="margin-top:24px;">Edit Credentials</h3>' +
-                '<div class="hq-studios-cred-form">' +
-                '<input type="text" id="cred-username" class="hq-input" value="' + store.username + '" placeholder="Username" style="width:160px;">' +
-                '<input type="password" id="cred-password" class="hq-input" placeholder="New password" style="width:160px;">' +
-                '<button class="hq-btn hq-btn-lavender" onclick="saveCredentials(\'' + store.store_id + '\')" style="height:32px;font-size:11px;padding:0 14px;">SAVE</button>' +
-                '<span id="cred-status" class="hq-muted-text"></span>' +
-                '</div>' +
-                '<h3 class="hq-subsection-heading" style="margin-top:24px;">Store Analytics</h3>' +
-                '<p class="hq-muted-text">Coming soon.</p>' +
+                    '<div class="hq-profile-header">' +
+                        '<div class="hq-profile-header-left">' +
+                            '<span class="hq-profile-name">' + store.name + '</span>' +
+                            '<span class="hq-count-dot ' + dotClass + '"></span>' +
+                        '</div>' +
+                        '<button class="hq-btn hq-btn-lavender hq-profile-edit-btn" onclick="enterEditMode(\'' + storeId + '\')">EDIT</button>' +
+                    '</div>' +
+                    '<div class="hq-profile-grid" id="profile-details">' +
+                        '<div><span class="hq-summary-label">TIME</span><div>' + getLocalTime(store.timezone) + '</div></div>' +
+                        '<div><span class="hq-summary-label">MANAGER</span><div id="pv-manager">' + (store.manager || '—') + '</div></div>' +
+                        '<div><span class="hq-summary-label">EMAIL</span><div id="pv-email">' + (store.email || '—') + '</div></div>' +
+                        '<div><span class="hq-summary-label">PHONE</span><div id="pv-phone">' + (store.phone || '—') + '</div></div>' +
+                    '</div>' +
+                    '<div id="profile-auth" style="display:none;"></div>' +
+                    '<h3 class="hq-subsection-heading" style="margin-top:24px;">ANALYTICS</h3>' +
+                    '<p class="hq-muted-text">Coming soon.</p>' +
                 '</div>';
         }
 
-        function saveCredentials(storeId) {
-            var username = document.getElementById('cred-username').value.trim();
-            var password = document.getElementById('cred-password').value.trim();
-            if (!username) return;
-            fetch('/hq/studios/update-credentials', {
+        function enterEditMode(storeId) {
+            var store = storeDataGlobal.find(function(s) { return s.store_id === storeId; });
+            if (!store) return;
+            // Replace details with inputs
+            var details = document.getElementById('profile-details');
+            details.innerHTML =
+                '<div><span class="hq-summary-label">TIME</span><div>' + getLocalTime(store.timezone) + '</div></div>' +
+                '<div><span class="hq-summary-label">MANAGER</span><div><input type="text" id="edit-manager" class="hq-input hq-inline-input" value="' + (store.manager || '') + '"></div></div>' +
+                '<div><span class="hq-summary-label">EMAIL</span><div><input type="text" id="edit-email" class="hq-input hq-inline-input" value="' + (store.email || '') + '"></div></div>' +
+                '<div><span class="hq-summary-label">PHONE</span><div><input type="text" id="edit-phone" class="hq-input hq-inline-input" value="' + (store.phone || '') + '"></div></div>';
+            // Replace edit button with save/cancel
+            var headerRight = document.querySelector('.hq-profile-edit-btn');
+            headerRight.outerHTML =
+                '<div class="hq-profile-btn-group">' +
+                    '<button class="hq-btn hq-btn-lavender hq-profile-edit-btn" onclick="saveStore(\'' + storeId + '\')">SAVE</button>' +
+                    '<button class="hq-btn hq-btn-white hq-profile-edit-btn" onclick="showStoreProfile(\'' + storeId + '\')">CANCEL</button>' +
+                    '<span id="save-status" class="hq-muted-text"></span>' +
+                '</div>';
+            // Show auth accordion
+            var auth = document.getElementById('profile-auth');
+            auth.style.display = 'block';
+            auth.innerHTML =
+                '<div class="hq-auth-accordion">' +
+                    '<h3 class="hq-subsection-heading" style="margin-top:20px;">AUTHENTICATION &#9662;</h3>' +
+                    '<div class="hq-auth-fields">' +
+                        '<div><span class="hq-summary-label">USERNAME</span><input type="text" id="edit-username" class="hq-input hq-inline-input" value="' + store.username + '"></div>' +
+                        '<div><span class="hq-summary-label">NEW PASSWORD</span><input type="password" id="edit-newpw" class="hq-input hq-inline-input" placeholder="New password..."></div>' +
+                        '<div><span class="hq-summary-label">CONFIRM PASSWORD</span><input type="password" id="edit-confirmpw" class="hq-input hq-inline-input" placeholder="Confirm password..."></div>' +
+                    '</div>' +
+                '</div>';
+        }
+
+        function saveStore(storeId) {
+            var payload = {
+                store_id: storeId,
+                manager: document.getElementById('edit-manager').value.trim(),
+                email: document.getElementById('edit-email').value.trim(),
+                phone: document.getElementById('edit-phone').value.trim(),
+                username: document.getElementById('edit-username').value.trim(),
+                new_password: document.getElementById('edit-newpw').value,
+                confirm_password: document.getElementById('edit-confirmpw').value
+            };
+            fetch('/hq/studios/update-store', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({store_id: storeId, username: username, password: password})
+                body: JSON.stringify(payload)
             })
             .then(function(r) { return r.json(); })
             .then(function(res) {
-                if (res.ok) {
-                    document.getElementById('cred-status').textContent = 'Saved';
+                var statusEl = document.getElementById('save-status');
+                if (res.success) {
                     // Update local data
                     var store = storeDataGlobal.find(function(s) { return s.store_id === storeId; });
-                    if (store) store.username = username;
-                    setTimeout(function() {
-                        var el = document.getElementById('cred-status');
-                        if (el) el.textContent = '';
-                    }, 2000);
+                    if (store) {
+                        store.manager = payload.manager;
+                        store.email = payload.email;
+                        store.phone = payload.phone;
+                        if (payload.username) store.username = payload.username;
+                    }
+                    if (statusEl) { statusEl.textContent = 'Saved.'; statusEl.style.color = '#4a9e5c'; }
+                    setTimeout(function() { showStoreProfile(storeId); }, 800);
+                } else {
+                    if (statusEl) { statusEl.textContent = res.error || 'Error'; statusEl.style.color = '#c0392b'; }
                 }
             })
-            .catch(function(err) {
-                document.getElementById('cred-status').textContent = 'Error saving';
+            .catch(function() {
+                var statusEl = document.getElementById('save-status');
+                if (statusEl) { statusEl.textContent = 'Network error'; statusEl.style.color = '#c0392b'; }
             });
         }
 

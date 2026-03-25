@@ -11,18 +11,21 @@
         <table class="hq-table">
             <thead>
                 <tr>
-                    <th>Store</th>
-                    <th>Timezone</th>
-                    <th>Username</th>
+                    <th style="width:50px;">Count</th>
+                    <th>Studio</th>
+                    <th>Manager</th>
                     <th>Email</th>
                 </tr>
             </thead>
             <tbody id="studios-tbody">
                 {% for store in db_stores %}
-                <tr class="hq-store-row hq-studios-row" data-sid="{{ store.store_id }}" data-name="{{ store.name|lower }}" onclick="showStoreProfile('{{ store.store_id }}')">
+                {% set status = recon_status.get(store.store_id, '') %}
+                <tr class="hq-store-row hq-studios-row" data-sid="{{ store.store_id }}" data-name="{{ store.name|lower }}" data-status="{{ status }}" onclick="showStoreProfile('{{ store.store_id }}')">
+                    <td>
+                        <span class="hq-count-dot {% if status == 'Updated' %}hq-dot-updated{% elif status == 'Discrepancy Detected' %}hq-dot-discrepancy{% elif status.startswith('Incomplete') %}hq-dot-incomplete{% else %}hq-dot-unknown{% endif %}"></span>
+                    </td>
                     <td>{{ store.name }}</td>
-                    <td>{{ store.timezone }}</td>
-                    <td>{{ store.username }}</td>
+                    <td>{{ store.manager or '—' }}</td>
                     <td>{{ store.email or '—' }}</td>
                 </tr>
                 {% endfor %}

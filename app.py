@@ -114,8 +114,7 @@ def get_db():
 
 def init_store_db():
     """Create and seed the store profiles database if it doesn't exist."""
-    if os.path.exists(STORE_DB):
-        return
+    need_seed = not os.path.exists(STORE_DB)
     os.makedirs(DATABASE_DIR, exist_ok=True)
     conn = sqlite3.connect(STORE_DB)
     conn.execute('''CREATE TABLE IF NOT EXISTS stores (
@@ -128,12 +127,19 @@ def init_store_db():
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
-    for store_id, name, tz in SEED_STORES:
-        pw_hash = bcrypt.hashpw(store_id.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        conn.execute(
-            'INSERT OR IGNORE INTO stores (store_id, name, timezone, username, password_hash) VALUES (?, ?, ?, ?, ?)',
-            (store_id, name, tz, store_id, pw_hash)
-        )
+    if need_seed:
+        for store_id, name, tz in SEED_STORES:
+            pw_hash = bcrypt.hashpw(store_id.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            conn.execute(
+                'INSERT OR IGNORE INTO stores (store_id, name, timezone, username, password_hash) VALUES (?, ?, ?, ?, ?)',
+                (store_id, name, tz, store_id, pw_hash)
+            )
+    # Add columns if missing
+    existing = [row[1] for row in conn.execute('PRAGMA table_info(stores)').fetchall()]
+    if 'manager' not in existing:
+        conn.execute("ALTER TABLE stores ADD COLUMN manager TEXT DEFAULT ''")
+    if 'phone' not in existing:
+        conn.execute("ALTER TABLE stores ADD COLUMN phone TEXT DEFAULT ''")
     conn.commit()
     conn.close()
 
@@ -923,7 +929,11 @@ def hq_section_database():
 @hq_login_required
 def hq_section_studios():
     db_stores = get_all_stores_db()
-    return render_template('fragments/studios.html', db_stores=db_stores)
+    results = run_reconciliation()
+    recon_status = {}
+    for s in results.get('stores', []):
+        recon_status[s['store_id']] = s['status']
+    return render_template('fragments/studios.html', db_stores=db_stores, recon_status=recon_status)
 
 
 @app.route('/hq/database/upload-msf', methods=['POST'])
@@ -975,6 +985,36 @@ def hq_studios_update_credentials():
         conn.close()
         return jsonify({'ok': True})
     return jsonify({'ok': False}), 400
+
+
+@app.route('/hq/studios/update-store', methods=['POST'])
+@hq_login_required
+def hq_studios_update_store():
+    data = request.get_json()
+    store_id = data.get('store_id', '')
+    if not store_id:
+        return jsonify({'success': False, 'error': 'Missing store_id'}), 400
+    manager = data.get('manager', '').strip()
+    email = data.get('email', '').strip()
+    phone = data.get('phone', '').strip()
+    username = data.get('username', '').strip()
+    new_password = data.get('new_password', '').strip()
+    confirm_password = data.get('confirm_password', '').strip()
+    if new_password and new_password != confirm_password:
+        return jsonify({'success': False, 'error': 'Passwords do not match'})
+    conn = get_db()
+    conn.execute('UPDATE stores SET manager = ?, email = ?, phone = ?, updated_at = CURRENT_TIMESTAMP WHERE store_id = ?',
+                 (manager, email, phone, store_id))
+    if username:
+        conn.execute('UPDATE stores SET username = ?, updated_at = CURRENT_TIMESTAMP WHERE store_id = ?',
+                     (username, store_id))
+    if new_password:
+        pw_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        conn.execute('UPDATE stores SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE store_id = ?',
+                     (pw_hash, store_id))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 
 
 @app.route('/hq/goto-studio')
