@@ -2,17 +2,17 @@
 
 <!-- Sub-nav -->
 <div class="hq-analytics-subnav">
-    <a href="#analytics-overview" class="hq-analytics-navlink">OVERVIEW</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('analytics-overview').scrollIntoView()" class="hq-analytics-navlink">OVERVIEW</a>
     <span class="hq-pipe">|</span>
-    <a href="#analytics-trend" class="hq-analytics-navlink">COMPLIANCE TREND</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('analytics-trend').scrollIntoView()" class="hq-analytics-navlink">COMPLIANCE TREND</a>
     <span class="hq-pipe">|</span>
-    <a href="#analytics-rankings" class="hq-analytics-navlink">STORE RANKINGS</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('analytics-rankings').scrollIntoView()" class="hq-analytics-navlink">STORE RANKINGS</a>
     <span class="hq-pipe">|</span>
-    <a href="#analytics-skus" class="hq-analytics-navlink">DISCREPANCY SKUS</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('analytics-skus').scrollIntoView()" class="hq-analytics-navlink">DISCREPANCY SKUS</a>
     <span class="hq-pipe">|</span>
-    <a href="#analytics-distribution" class="hq-analytics-navlink">DISTRIBUTION</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('analytics-distribution').scrollIntoView()" class="hq-analytics-navlink">DISTRIBUTION</a>
     <span class="hq-pipe">|</span>
-    <a href="#analytics-groups" class="hq-analytics-navlink">STORE GROUPS</a>
+    <a href="javascript:void(0)" onclick="document.getElementById('analytics-groups').scrollIntoView()" class="hq-analytics-navlink">STORE GROUPS</a>
 </div>
 
 <!-- Panel 1: Network Summary -->
@@ -33,13 +33,13 @@
         <div class="hq-analytics-stat hq-analytics-stat-split">
             <div class="hq-analytics-stat-half">
                 <div class="hq-summary-label">Chronic Offenders</div>
-                <a href="#analytics-groups" class="hq-summary-value" style="color:#dc2626;text-decoration:none;">{{ analytics.chronic_offender_count }} stores</a>
+                <a href="javascript:void(0)" onclick="document.getElementById('analytics-groups').scrollIntoView()" class="hq-summary-value" style="color:#dc2626;text-decoration:none;">{{ analytics.chronic_offender_count }} stores</a>
                 <div class="hq-muted-text" style="font-size:10px;">compliance &lt; 60%</div>
             </div>
             <div class="hq-analytics-stat-divider"></div>
             <div class="hq-analytics-stat-half">
                 <div class="hq-summary-label">Top Performers</div>
-                <a href="#analytics-groups" class="hq-summary-value" style="color:#4a9e5c;text-decoration:none;">{{ analytics.top_performer_count }} stores</a>
+                <a href="javascript:void(0)" onclick="document.getElementById('analytics-groups').scrollIntoView()" class="hq-summary-value" style="color:#4a9e5c;text-decoration:none;">{{ analytics.top_performer_count }} stores</a>
                 <div class="hq-muted-text" style="font-size:10px;">compliance &ge; 90%</div>
             </div>
         </div>

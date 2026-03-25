@@ -12,21 +12,21 @@
     <header class="studio-header">
         <div class="studio-header-left">
             {% if session.get('is_admin') %}
-            <a href="/studio/goto-hq" class="studio-nav-link">HQ</a>
-            <span class="studio-header-rule"></span>
+            <div class="studio-hq-box">
+                <a href="/studio/goto-hq" class="studio-nav-link">HQ</a>
+            </div>
             {% endif %}
-            <span class="studio-logotype">STUDS</span>
-            <span class="studio-header-rule"></span>
-            <span class="studio-header-label">STUDIO</span>
-            <span class="studio-header-rule"></span>
-            <span class="studio-header-label">(CONFIDENTIAL)</span>
+        </div>
+        <div class="studio-header-center">
+            <div class="studio-logotype">STUDS</div>
+            <div class="studio-confidential">(CONFIDENTIAL)</div>
         </div>
         <div class="studio-header-right">
             {% if sku_list_filename %}
-            <span class="studio-filename">{{ sku_list_filename }}</span>
+            <span class="studio-sku-filename">{{ sku_list_filename }}</span>
             {% endif %}
             {% if not no_sku_list %}
-            <button class="studio-btn-print" onclick="handlePrint()">PRINT</button>
+            <button class="studio-print-btn" onclick="handlePrint()">PRINT</button>
             {% endif %}
             <a href="/studio/logout" class="studio-nav-link">LOGOUT</a>
         </div>
