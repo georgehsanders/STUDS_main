@@ -169,7 +169,13 @@ body { font-family: var(--font-main); }
     color: #666666;
 }
 
-.hq-nav-link {
+/* --- Shared link base --- */
+
+.hq-nav-link,
+.hq-portal-link,
+.hq-section-link,
+.hq-action-link,
+.hq-return-link {
     font-size: 11px;
     font-weight: 400;
     letter-spacing: 0.12em;
@@ -178,7 +184,11 @@ body { font-family: var(--font-main); }
     color: #1a1a1a;
 }
 
-.hq-nav-link:hover {
+.hq-nav-link:hover,
+.hq-portal-link:hover,
+.hq-section-link:hover,
+.hq-action-link:hover,
+.hq-return-link:hover {
     text-decoration: underline;
 }
 
@@ -645,42 +655,48 @@ body.hq-body #refresh-btn:disabled {
     color: #1a1a1a;
 }
 
+/* --- Shared button base --- */
+
+.hq-btn-base,
+.hq-btn-outline,
+.hq-btn-red,
+.hq-btn-delete,
+.hq-btn-gold,
+.hq-btn-lime-link,
+.hq-btn-lavender-link {
+    border: 1.5px solid #000000;
+    border-radius: 0;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.hq-btn-base:hover,
+.hq-btn-outline:hover,
+.hq-btn-red:hover,
+.hq-btn-delete:hover,
+.hq-btn-gold:hover,
+.hq-btn-lime-link:hover,
+.hq-btn-lavender-link:hover {
+    text-decoration: underline;
+}
+
 /* --- Outline button (Delete All) --- */
 
 .hq-btn-outline {
     background: #ffffff;
     color: #000000;
-    border: 1.5px solid #000000;
-    border-radius: 0;
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    cursor: pointer;
     padding: 0 18px;
     height: 34px;
-}
-
-.hq-btn-outline:hover {
-    text-decoration: underline;
 }
 
 .hq-btn-red {
     background: #dc2626;
     color: #ffffff;
-    border: 1.5px solid #000000;
-    border-radius: 0;
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    cursor: pointer;
     padding: 0 18px;
     height: 34px;
-}
-
-.hq-btn-red:hover {
-    text-decoration: underline;
 }
 
 /* --- Per-row delete button --- */
@@ -689,17 +705,8 @@ body.hq-body #refresh-btn:disabled {
     background: #ffffff;
     color: #000000;
     border: 1px solid #000000;
-    border-radius: 0;
-    font-size: 11px;
-    font-weight: 400;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
-    cursor: pointer;
     padding: 2px 10px;
-}
-
-.hq-btn-delete:hover {
-    text-decoration: underline;
 }
 
 /* --- Table cell styling within hq-body pages --- */
@@ -1336,17 +1343,8 @@ body.hq-body .settings-textarea {
 }
 
 .hq-return-link {
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    text-decoration: none;
     color: #000000;
     margin-left: 16px;
-}
-
-.hq-return-link:hover {
-    text-decoration: underline;
 }
 
 
@@ -1452,17 +1450,7 @@ body.hq-body .settings-textarea {
 }
 
 .hq-portal-link {
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: #1a1a1a;
-    text-decoration: none;
     cursor: pointer;
-}
-
-.hq-portal-link:hover {
-    text-decoration: underline;
 }
 
 .hq-current {
@@ -1509,15 +1497,6 @@ body.hq-body .settings-textarea {
 
 .hq-section-link {
     font-size: 13px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: #1a1a1a;
-}
-
-.hq-section-link:hover {
-    text-decoration: underline;
 }
 
 .hq-section-link.active {
@@ -1535,17 +1514,7 @@ body.hq-body .settings-textarea {
 }
 
 .hq-action-link {
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    text-decoration: none;
-    color: #1a1a1a;
     margin-left: 20px;
-}
-
-.hq-action-link:hover {
-    text-decoration: underline;
 }
 
 /* --- Studios section --- */
@@ -1795,21 +1764,9 @@ body.hq-body .settings-textarea {
     align-items: center;
     background: #FFD700;
     color: #000000;
-    border: 1.5px solid #000000;
-    border-radius: 0;
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     padding: 0 18px;
     height: 34px;
     text-decoration: none;
-    cursor: pointer;
-}
-
-.hq-btn-lime-link:hover,
-.hq-btn-lavender-link:hover {
-    text-decoration: underline;
 }
 
 .hq-btn-gold {
@@ -1817,22 +1774,9 @@ body.hq-body .settings-textarea {
     align-items: center;
     background: #ffffff;
     color: #000000;
-    border: 1.5px solid #000000;
-    border-radius: 0;
-    font-size: 11px;
-    font-weight: 400;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
     padding: 0 18px;
     height: 34px;
     text-decoration: none;
-    cursor: pointer;
-}
-
-.hq-btn-lime-link:hover,
-.hq-btn-lavender-link:hover,
-.hq-btn-gold:hover {
-    text-decoration: underline;
 }
 
 /* --- Controls row alignment --- */
