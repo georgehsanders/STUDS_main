@@ -206,12 +206,12 @@ function scrollToSection(id) {
     });
 })();
 
-// Set sticky top offset to clear the fixed header
-(function() {
+// Set sticky top offset to clear the fixed header (deferred so charts settle first)
+setTimeout(function() {
     var subnav = document.querySelector('.hq-analytics-subnav');
     var headerEl = document.querySelector('.hq-spa-header');
     if (subnav && headerEl) {
         subnav.style.top = headerEl.offsetHeight + 'px';
     }
-})();
+}, 100);
 </script>
