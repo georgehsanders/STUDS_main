@@ -736,6 +736,106 @@ def hq_upload():
     return render_template('upload.html', global_files=global_files, variance_files=variance_files)
 
 
+@app.route('/hq/generate-omnicounts', methods=['POST'])
+@hq_login_required
+def hq_generate_omnicounts():
+    # Validate store number
+    store_number = request.form.get('store_number', '').strip()
+    if not store_number or not store_number.isdigit():
+        flash('Store number must be numeric.', 'error')
+        return redirect(url_for('hq_upload'))
+
+    # Find the weekly SKU list using reconcile's scan
+    scan = scan_input_files()
+    if not scan['sku_lists']:
+        flash('No weekly SKU list file found in /input/. Upload one before generating.', 'error')
+        return redirect(url_for('hq_upload'))
+
+    sku_list_filename = scan['sku_lists'][0][0]
+    weekly_skus = load_sku_list(os.path.join(INPUT_DIR, sku_list_filename))
+
+    # Read and filter the uploaded Brightpearl CSV
+    bp_file = request.files.get('bp_file')
+    if not bp_file or not bp_file.filename:
+        flash('Please upload a Brightpearl inventory CSV.', 'error')
+        return redirect(url_for('hq_upload'))
+
+    raw_bytes = bp_file.read()
+    text = clean_csv_content(raw_bytes)
+    reader = csv.DictReader(io.StringIO(text))
+    reader.fieldnames = [h.strip() for h in reader.fieldnames]
+
+    # Authoritative ordered column list from the CSV header
+    fieldnames = list(reader.fieldnames)
+
+    # Detect all known columns in a single pass (case-insensitive, original case preserved)
+    sku_col = None
+    product_id_col = None
+    product_name_col = None
+    options_col = None
+    for h in fieldnames:
+        hl = h.lower()
+        if hl == 'sku' and sku_col is None:
+            sku_col = h
+        elif hl == 'product id' and product_id_col is None:
+            product_id_col = h
+        elif hl == 'product name' and product_name_col is None:
+            product_name_col = h
+        elif hl == 'options' and options_col is None:
+            options_col = h
+    if sku_col is None:
+        flash('Uploaded CSV has no SKU column.', 'error')
+        return redirect(url_for('hq_upload'))
+    text_cols = {sku_col, product_id_col, product_name_col, options_col} - {None}
+
+    # Collect matching rows, keyed exactly to fieldnames
+    matched_rows = []
+    seen_skus = set()
+    for row in reader:
+        out = {}
+        for col in fieldnames:
+            val = row.get(col)
+            out[col] = val.strip() if val else ''
+        sku_val = out[sku_col]
+        if sku_val and not is_excluded_sku(sku_val) and sku_val in weekly_skus:
+            matched_rows.append(out)
+            seen_skus.add(sku_val)
+
+    # Load SKU Master for descriptions
+    sku_master_desc = {}
+    sku_master_path = os.path.join(MASTER_DIR, 'SKU_Master.csv')
+    if os.path.isfile(sku_master_path):
+        master_rows = parse_csv(sku_master_path)
+        for row in master_rows:
+            s = row.get('sku', '').strip()
+            if s:
+                sku_master_desc[s] = row.get('description', '').strip()
+
+    # Write matched rows + placeholder rows for missing SKUs
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in matched_rows:
+        writer.writerow(row)
+    for sku in sorted(weekly_skus - seen_skus):
+        fill_row = {}
+        for col in fieldnames:
+            if col == sku_col:
+                fill_row[col] = sku
+            elif col == product_name_col:
+                fill_row[col] = sku_master_desc.get(sku, '')
+            elif col in text_cols:
+                fill_row[col] = ''
+            else:
+                fill_row[col] = '0'
+        writer.writerow(fill_row)
+
+    output.seek(0)
+    result_bytes = io.BytesIO(output.getvalue().encode('utf-8'))
+    download_name = f'{store_number}_OnHands.csv'
+    return send_file(result_bytes, mimetype='text/csv', as_attachment=True, download_name=download_name)
+
+
 @app.route('/hq/delete-file', methods=['POST'])
 @hq_login_required
 def hq_delete_file():
