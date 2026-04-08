@@ -245,6 +245,21 @@ Exhaustive checklist of every user-facing feature and observable behavior.
 - [ ] Success messages displayed in green-styled banner
 - [ ] Error messages displayed in standard warning banner
 
+### OmniCounts File Generator
+- [ ] Section appears at the top of the upload page with heading "GENERATE OMNICOUNTS FILE"
+- [ ] Help text explains the purpose: upload a Brightpearl full inventory CSV and enter a store number to generate a filtered OnHands file
+- [ ] File input accepts `.csv` files (Brightpearl inventory export)
+- [ ] Store number input: numeric-only, validated client-side and server-side
+- [ ] Client-side validation (`validateOmnicounts()`) rejects non-digit store numbers and displays inline error message
+- [ ] Server-side validation rejects empty or non-numeric store numbers with flash error
+- [ ] Requires a weekly SKU list file to be present in `/input/`; flashes error if none found
+- [ ] Filters the uploaded Brightpearl CSV to only SKUs present on the weekly SKU list
+- [ ] Excludes SKUs matching the RS-prefix exclusion rule (`is_excluded_sku`)
+- [ ] Preserves the original Brightpearl CSV column structure and order
+- [ ] Appends placeholder rows for weekly SKUs not found in the Brightpearl file: SKU column filled, Product Name pulled from `SKU_Master.csv` if available, text columns blank, numeric columns set to `0`
+- [ ] Returns a downloadable CSV named `{store_number}_OnHands.csv`
+- [ ] Route: `POST /hq/generate-omnicounts` (requires HQ login)
+
 ### Upload Section
 - [ ] File input accepting `.csv` files, supports multiple file selection
 - [ ] UPLOAD button submits the form
